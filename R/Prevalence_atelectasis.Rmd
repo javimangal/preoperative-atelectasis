@@ -1,0 +1,4500 @@
+---
+title: "Preoperative Atelectasis"
+author: "Javier Mancilla Galindo"
+date: last rendered on "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: default
+    highlight: pygments
+---
+
+# Setup 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) #show both code and output by default
+knitr::opts_chunk$set(warning=FALSE) #hides all warnings
+knitr::opts_chunk$set(message=FALSE) #hides all package message
+```
+
+#### Load packages  
+```{r}
+if ( !require("pacman", quietly = TRUE) )
+    install.packages("pacman")
+
+pacman::p_load(
+  tidyverse, #Used for basic data handling and visualization.  
+  RColorBrewer, #Color palettes for data visualization. 
+  gridExtra, #Used to arrange multiple ggplots in a grid.  
+  grid, #Used to arrange multiple ggplots in a grid.
+  overviewR, #Used to assess missing data.  
+  rnaturalearth, #Used to extract geographical data to create maps. 
+  sf, #Used together with the prior package to create map. 
+  plotly, #Used together with prior two packages to create map.  
+  table1, #Used to add labels to variables and to create table of descriptive characteristics of patients.
+  flextable, #Used to export tables.  
+  officer,  #Used to export tables.
+  mgcv, #Used to model non-linear relationships with a general additive model.  
+  ggmosaic, #Used to create mosaic plots.   
+  car, #Used to visualize distribution of continuous variables (stacked Q-Q plots).
+  simpleboot, #Used to calculate mean atelectasis coverage and confidence intervals trhough bootstrapping. 
+  boot, #Used to calculate mean atelectasis coverage and confidence intervals trhough bootstrapping.
+  dagitty, #Used in conjunction with https://www.dagitty.net/ to create directed acyclic graph to inform statistical modelling.
+  lavaan, #Used to create correlation matrix to assess conditional independencies.  
+  broom, #Used to exponentiate coefficients of regression models. 
+  sandwich, #Used to calculate robust standard errors for prevalence ratios.  
+  ordinal, #Used to model ordinal outcome (atelectasis percent) and to test proportional odds assumptions.  
+  VGAM, #Used to model partial proportional odds model.   
+  gt, #Used to present a summary of the results of regression models.   
+  gtsummary, #Used to create table to summarize regression models.  
+  gratia #Used together with gglopt2 to create smooth partial effects plot from gam models. 
+)
+```
+
+Set seed (needed for reproducibility of bootstrapping) as the current year 2023:   
+```{r}
+set.seed(2023)
+```
+
+
+##### Log session info  
+```{r}
+# Credits for this chunk of code: Alex Bossers, Utrecht University (a.bossers@uu.nl)  
+
+# remove clutter
+session <- sessionInfo()
+session$BLAS <- NULL; session$LAPACK <- NULL; session$loadedOnly <- NULL;
+# write log file
+writeLines(capture.output( print( session, locale=FALSE ) ), 
+           paste0(lubridate::today(),"_sessionInfo_prevalencia_atelectasias.txt") )
+# also show in notebook.
+session 
+```
+
+Set working directory and create sub-folders   
+```{r, include=FALSE}
+rm(session)
+
+setwd("D:/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/Mancilla-Kammar Lab/Tesis/Manuel Guerrero/Atelectasias")
+```
+
+
+```{r}
+figfolder   <- "01_output_figures"
+tabfolder   <- "01_output_tables"
+psfolder    <- "02_ps_subsets"
+dir.create( figfolder, showWarnings=FALSE )
+dir.create( tabfolder, showWarnings=FALSE )
+dir.create( psfolder, showWarnings=FALSE )
+```
+
+Load dataset  
+```{r}
+data <- read.csv("atelectasis_prevalence.csv", na.strings="NA", row.names = NULL)
+str(data)
+```
+
+Recode variables  
+```{r, results='hide'}
+table1::label(data$age) <- "Age"
+units(data$age) <- "years"
+
+table1::label(data$sex) <- "Sex"
+data$sex <- factor(data$sex, 
+                   levels=c(1,2), 
+                   labels=c("Woman", "Man")
+                   )
+
+
+table1::label(data$weight) <- "Weight"
+units(data$weight) <- "kilograms (kg)"
+
+table1::label(data$height) <- "Height"
+units(data$height) <- "meters (m)"
+
+table1::label(data$type_obesity) <- "Obesity class"
+data$type_obesity <- factor(data$type_obesity, 
+                            levels=c(1,2,3), 
+                            labels=c("Class 1 Obesity",
+                                     "Class 2 Obesity",
+                                     "Class 3 Obesity")
+                            ) 
+
+table1::label(data$ARISCAT) <- "ARISCAT"
+units(data$ARISCAT) <- "score"
+
+table1::label(data$ARISCAT_group) <- "ARISCAT risk group"
+data$ARISCAT_group <- factor(data$ARISCAT_group,
+                             levels=c(1,2,3), 
+                             labels=c("Low Risk",
+                                      "Intermediate Risk",
+                                      "High Risk")
+                             )
+
+
+table1::label(data$ASA) <- "ASA physical status"
+data$ASA <- factor(data$ASA, 
+                   levels=c(1,2,3), 
+                   labels=c("ASA 1", "ASA 2", "ASA 3")
+                   )
+
+table1::label(data$spo2_VPO) <- "Oxygen saturation (SpO2)"
+units(data$spo2_VPO) <- "%"
+
+table1::label(data$surgical_procedure) <- "Surgical procedure"
+data$surgical_procedure <- factor(data$surgical_procedure,
+                                  levels=c(1,2,3,4),
+                                  labels=c("SG", # 'SG' = Sleeve Gastrectomy
+                                           "RYGB", # 'RYGB' = Roux-en-Y gastric bypass
+                                           "OAGB", # 'OAGB' = One anastomosis gastric bypass
+                                           "LBGS") # 'LBGS' = lap-band to sleeve
+                                  )
+
+table1::label(data$CORADS) <- "CO-RADS"
+data$CORADS <- factor(data$CORADS,
+                      levels=c(1,2,3,4),
+                      labels=c("CO-RADS 1",
+                               "CO-RADS 2",
+                               "CO-RADS 3",
+                               "CO-RADS 4"),
+                      ordered = TRUE
+                      )
+
+table1::label(data$atelectasis) <- "Atelectasis"
+data$atelectasis <- factor(data$atelectasis,
+                           levels=c(0,1),
+                           labels=c("No", "Yes")
+                           ) %>% 
+  relevel("Yes","No") #Relevel done for convenience when visualizing 2x2 tables.
+
+table1::label(data$atelectasis_location) <- "Atelectasis location"
+data$atelectasis_location <- factor(data$atelectasis_location,
+                                    levels=c(1,2),
+                                    labels=c("Unilateral", "Bilateral")
+                                    )
+
+table1::label(data$atelectasis_percent) <- "Percentage of atelectasis"
+units(data$atelectasis_percent) <- "%"
+
+table1::label(data$hb) <- "Hemoglobin"
+units(data$hb) <- "g/dL"
+
+table1::label(data$hct) <- "Hematocrit"
+units(data$hct) <- "%"
+
+table1::label(data$leu) <- "WBC count"
+units(data$leu) <- "10³/µL"
+
+table1::label(data$neu_percent) <- "Neutrophils (percent)"
+units(data$neu_percent) <- "%"
+
+table1::label(data$neu_absolute) <- "Neutrophils (absolute)"
+units(data$neu_absolute) <- "10³/µL"
+
+table1::label(data$linf_percent) <- "Lymphocytes (percent)"
+units(data$linf_percent) <- "%"
+
+table1::label(data$linf_absolute) <- "Lymphocytes (absolute)"
+units(data$linf_absolute) <- "10³/µL"
+
+table1::label(data$mon_percent) <- "Monocytes (percent)"
+units(data$mon_percent) <- "%"
+
+table1::label(data$mon_absolute) <- "Monocytes (absolute)"
+units(data$mon_absolute) <- "10³/µL"
+
+table1::label(data$platelets) <- "Platelets"
+units(data$platelets) <- "cells/µL"
+
+table1::label(data$glucose) <- "Glucose"
+units(data$glucose) <- "mg/dL"
+
+table1::label(data$urea) <- "Urea"
+units(data$urea) <- "mg/dL"
+
+table1::label(data$creatinine) <- "Creatinine"
+units(data$creatinine) <- "mg/dL"
+
+data$rapid_covid_test <- as.factor(data$rapid_covid_test) %>% 
+  fct_recode(negative = "0") 
+
+data$PCR_covid <- as.factor(data$PCR_covid) %>% fct_recode(negative = "0") 
+
+table1::label(data$state_residence) <- "State of residence"
+data$state_residence <- as.factor(data$state_residence)
+
+data$altitude <- as.numeric(data$altitude)
+table1::label(data$altitude) <- "Mean altitude"
+units(data$altitude) <- "meters"
+
+table1::label(data$surgery_performed) <- "Surgery performed"
+data$surgery_performed <- factor(data$surgery_performed,
+                                 levels=c(0,1),
+                                 labels=c("No", "Yes")
+                                 ) 
+
+table1::label(data$hypertension) <- "Hypertension"
+data$hypertension <- factor(data$hypertension, 
+                            levels=c(0,1), 
+                            labels=c("No", "Yes")
+                            ) 
+
+table1::label(data$diabetes) <- "Diabetes"
+data$diabetes <- factor(data$diabetes, 
+                        levels=c(0,1), 
+                        labels=c("No", "Yes")
+                        )
+
+table1::label(data$sleep_apnea) <- "Obstructive sleep apnea"
+data$sleep_apnea <- factor(data$sleep_apnea,
+                           levels=c(0,1),
+                           labels=c("No", "Yes")
+                           ) 
+
+table1::label(data$hypothyroidism) <- "Hypothyroidism"
+data$hypothyroidism <- factor(data$hypothyroidism, 
+                              levels=c(0,1),
+                              labels=c("No", "Yes")
+                              )
+
+table1::label(data$dyslipidemia) <- "Dyslipidemia"
+data$dyslipidemia <- factor(data$dyslipidemia,
+                            levels=c(0,1),
+                            labels=c("No", "Yes")
+                            )  
+
+table1::label(data$antidepressant_use) <- "Antidepressants use"
+data$antidepressant_use <- factor(data$antidepressant_use,
+                                  levels=c(0,1),
+                                  labels=c("No", "Yes")
+                                  )
+
+table1::label(data$prior_covid19) <- "Prior COVID-19"
+data$prior_covid19 <- factor(data$prior_covid19, 
+                             levels=c(0,1), 
+                             labels=c("No", "Yes")
+                             )
+
+table1::label(data$other_comorb) <- "Other comorbidities"
+data$other_comorb <- factor(data$other_comorb, 
+                            levels=c(0,1), 
+                            labels=c("No", "Yes")
+                            )
+
+str(data)
+```
+
+
+# General overview  
+```{r}
+summary(data)
+```
+
+##### Exclude participants with CO-RADS ≥ 3:   
+    
+Participants with higher probability of having a current diagnosis of COVID-19 are expected to have chest CT alterations due to COVID-19 pneumonia. Thus, will be excluded.   
+    
+Number of patients according to CO-RADS:  
+```{r}
+summary(data$CORADS)
+```
+
+```{r}
+count(data)
+```
+
+```{r}
+data <- data %>% filter(as.numeric(CORADS) < 3) %>% droplevels(data$CORADS)
+count(data)
+```
+
+##### Exclude participants with prior COVID-19:   
+    
+Since prior COVID-19 is considered a confounder and since there are only 3 participants with prior COVID-19 which would provide difficult to assess the role of prior COVID-19 in analyses, participants with prior COVID-19 were excluded from the analysis.  
+    
+```{r}
+count(data)
+```
+
+```{r}
+data <- data %>% filter(prior_covid19 == "No") %>% droplevels(data$prior_covid19)
+count(data)
+```
+
+Will remove prior_covid19 column as it no longer provides information of a varying characteristic. Similarly, rapid_covid_test does not provide additional information.   
+```{r}
+length(data)
+```
+
+
+```{r}
+data <- data %>% select(-c(prior_covid19, rapid_covid_test))
+length(data)
+```
+
+
+## Missing data per variable     
+```{r}
+overview_na(data)
+```
+
+Missing data for PCR_covid and is explained since only patients who decided to have a test performed on their own will reported the result. The medical center did not require a negative PCR test at that time during the pandemic, reason why PCR tests were not systematically performed. As shown in earlier summary of variables, all available tests (n=3) were negative. This variable will not be analyzed further downstream:    
+
+```{r}
+data <- data %>% select(-PCR_covid)
+```
+
+The variable atelectasis_location has missing data since those patients who did not have atelectasis naturally do not have a location recorded. Will assess if data are missing for those who had atelectasis:  
+```{r}
+data %>% filter(atelectasis == "Yes") %>% 
+  group_by(atelectasis_location) %>% 
+  overview_na()
+```
+
+There is no missing data for ***atelectasis_location*** after sub-setting only those who had atelectasis.  
+
+Lastly, I will subset all participants without the prior variable to further assess the extent of missing data for other variables:     
+
+```{r}
+data %>% select(-c(atelectasis_location)) %>% overview_na()
+```
+
+Missing data constitutes **less than 5%** for all remaining variables. Thus, will proceed with **complete-case analysis** without performing any data imputation procedure.  
+
+# State of residence of participants.   
+
+```{r}
+table <- data %>% 
+  group_by(state_residence) %>% 
+  summarize(n=n()) %>% 
+  mutate(name=state_residence) %>% 
+  select(-state_residence) %>% 
+  relocate(name) %>% 
+  arrange(desc(n))
+
+table
+```
+
+
+The following two chunks of code were adapted from [contribution by cpsievert](https://community.rstudio.com/t/combining-usa-canada-specific-province-with-plotly-plot-geo-or-ggplot2/12375).
+
+```{r}
+# us laea projection as used in albersusa::us_laea_proj
+us_laea <- "+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs"
+
+usa <- ne_states(country = "united states of america", returnclass = "sf") %>%
+  st_transform(us_laea) %>%
+  select(name)
+
+canada <- ne_states(country = "canada", returnclass = "sf") %>%
+  st_transform(us_laea) %>%
+  select(name)
+
+usa <- left_join(usa, table, by="name") 
+canada <- left_join(canada, table, by="name") 
+```
+
+### Supplementary Figure S2   
+    
+Create map with number of patients per state in Canada and the USA.       
+```{r}
+figS2 <- plot_ly(split = ~name, color = ~n, colors = "Blues",
+                 stroke = I("black"), span = I(1),
+                 height = 450,
+                 width = 800) %>%
+  add_sf(data = usa, color = I("dimgray")) %>%
+  add_sf(data = canada, color = I("dimgray")) %>%
+  add_sf(data = filter(canada, name %in% table$name)) %>%
+  add_sf(data = filter(usa, name %in% table$name)) %>%
+  layout(showlegend = FALSE) %>%
+  colorbar(title = "Number of<br>patients")
+```
+
+Create a table with the absolute frequency of patients per state to complement visualization.   
+```{r}
+table <- table %>% rename(State=name)
+
+fig_add <- plot_ly(type="table",
+                   domain = list(x=c(0,0.25), y=c(0,0.6)),
+                   header=list(values=names(table)), 
+                   cells=list(values=unname(table)))
+
+```
+
+Combine the prior two elements in one single figure:   
+```{r}
+fig <- subplot(fig_add, figS2,
+               nrows=1,
+               margin=1) 
+fig
+```
+
+
+```{r, include=FALSE}
+save_image(fig, file=paste(figfolder,"/FigureS2.png",sep=""), width=800, height=450)
+save_image(fig, file=paste(figfolder,"/FigureS2.pdf",sep=""))
+```
+
+
+```{r, include=FALSE}
+rm(canada,usa,fig,fig_add,figS2,table,us_laea)
+```
+
+
+# Distribution of numerical variables    
+
+Due to the large number of figures produced, I will not show these in the rendered HTML document. Plots were created with this code:   
+```{r distribution numerical, echo=TRUE, results='hide', fig.height=4, fig.width=6}
+for(variable in names(data)) {
+if(is.numeric(data[[variable]])) {
+        
+  name <- variable
+        
+  Main <- paste("Histogram of", variable, sep=" ")
+  hist(data[[variable]], xlab=name, main=Main, 
+       col = "steelblue")
+        
+  Main <- paste("Boxplot of", variable, sep=" ")
+  boxplot(data[[variable]], xlab=name, main=Main, 
+          horizontal=TRUE, 
+          col = "steelblue")
+        
+  Main <- paste("Normal Q-Q Plot of", variable, sep=" ")
+  qqnorm(data[[variable]], main = Main); 
+  qqline(data[[variable]], col = "steelblue",lwd = 2)
+  
+  }
+}
+
+```
+
+```{r, include=FALSE}
+rm(variable,Main,name)
+```
+
+
+Near normal distribution:  
+- Age: light tails  
+- height: heavy right tail, **4 outliers right**  
+- hb: heavy tails, bilateral outliers    
+- hct: heavy tails, bilateral outliers  
+- leu: near normal, bilateral outliers  
+- neu_absolute: heavy right tail, **two right outliers**  
+- linf_absolute: heavy right tail, bilateral outliers (more right)     
+- mon_absolute: heavy right tail, bilateral outliers (more right)   
+- platelets: two right outliers   
+- urea: four right outliers  
+- creatinine: three right outliers  
+
+
+Distribution not normal:  
+- Weight: right-skewed, outliers are verified observations of extreme weight.
+- BMI: right-skewed, outliers are verified observations of extreme BMI.  
+- spo2_VPO: Left-skewed   
+- neu_percent: left-skewed  
+- linf_percent: right-skewed  
+- glucose: right-skewed  
+- mon_percent: observations around only 5 data points. Will not use this variable, only absolute monocytes will be used.     
+- altitude: distribution not clear as values are quite apart an concentrate around single states with diferring mean altitudes. Perhaps best to try to use smooth term later?      
+
+Outcome variable:  
+- atelectasis_percent: Zero-inflated. Would be difficult to manage as categorical ordinal due to low number of patients in some categories. Will re-assess later and decide.   
+
+Group variables by distribution, then apply statement to use output to render table 1:     
+```{r}
+normal <- c("age",
+            "height",
+            "hb",
+            "hct",
+            "leu",
+            "neu_absolute",
+            "linf_absolute",
+            "mon_absolute",
+            "platelets",
+            "urea",
+            "creatinine"
+            )
+nonormal <- c("weight"
+              ,"BMI",
+              "spo2_VPO",
+              "neu_percent",
+              "linf_percent",
+              "glucose",
+              "atelectasis_percent",
+              "mon_percent",
+              "altitude"
+              )
+
+for(name in normal) cat(name,"=", switch(EXPR = name, '"Mean (SD)",'),"\n")
+for(name in nonormal) cat(name,"=", switch(EXPR = name, '"Median [Q1, Q3]",'),"\n")
+```
+
+
+# Table 1   
+Log abbreviations  
+```{r}
+abbreviations = sort(c("body-mass index (BMI)", 
+                       "peripheral saturation of oxygen (SpO2)",
+                       "COVID-19 Reporting and Data System (CO-RADS)",
+                       "sleeve gastrectomy (SG)",
+                       "roux-en-Y gastric bypass (RYGB)",
+                       "one anastomosis gastric bypass (OAGB)",
+                       "lap-band to gastric sleeve (LBGS)",
+                       "coronavirus disease (COVID-19)",
+                       "Assess Respiratory Risk in Surgical Patients in Catalonia (ARISCAT)",
+                       "white blood cell (WBC)")
+                     )
+abbreviations_stats = sort(c("standard deviation (SD)",
+                             "interquartile range (IQR)",
+                             "percentage (%)",
+                             "25th percentile (Q1)",
+                             "75th percentile (Q3)")
+                           )
+```
+
+Generate Table 1 with render function    
+```{r}
+rndr <- function(x, name, ...) {
+    if (!is.numeric(x)) return(render.categorical.default(x))
+    what <- switch(name,
+                   age = "Mean (SD)", 
+                   height = "Mean (SD)", 
+                   hb = "Mean (SD)", 
+                   hct = "Mean (SD)", 
+                   leu = "Mean (SD)", 
+                   neu_absolute = "Mean (SD)", 
+                   linf_absolute = "Mean (SD)", 
+                   mon_absolute = "Mean (SD)", 
+                   platelets = "Mean (SD)", 
+                   urea = "Mean (SD)", 
+                   creatinine = "Mean (SD)", 
+                   weight = "Median [Q1, Q3]", 
+                   BMI = "Median [Q1, Q3]", 
+                   spo2_VPO = "Median [Q1, Q3]", 
+                   neu_percent = "Median [Q1, Q3]", 
+                   linf_percent = "Median [Q1, Q3]", 
+                   glucose = "Median [Q1, Q3]", 
+                   atelectasis_percent = "Median [Q1, Q3]", 
+                   mon_percent = "Median [Q1, Q3]", 
+                   altitude = "Median [Q1, Q3]"
+                   ) 
+    parse.abbrev.render.code(c("", what))(x)
+}
+
+table1 <- table1(~ sex + age + weight + height + BMI + surgical_procedure + ARISCAT_group + spo2_VPO + altitude + hypertension + diabetes + sleep_apnea + hypothyroidism + dyslipidemia + antidepressant_use + CORADS + glucose + creatinine + urea + hb + hct + leu + neu_absolute + linf_absolute + mon_absolute + platelets | type_obesity, 
+       data=data,
+       overall=c(left="Total"), 
+       render=rndr,
+       caption="Clinical characteristics of patients, according to obesity class.", 
+       footnote=c(abbreviations,abbreviations_stats)
+       )
+table1
+```
+
+NOTE: The **ASA** physical status variable has not been included in analyses since the [updated version of ASA](https://www.asahq.org/standards-and-practice-parameters/statement-on-asa-physical-status-classification-system) consulted on October 2023 classifies obesity (30<BMI<40) as ASA 2 and obesity (BMI ≥40) as ASA 3. The distribution of frequencies of ASA~obesity class in this dataset does not match such definition. This occurred since an outdated version of ASA that did not include obesity was likely used by clinicians when writing the preoperative assessment medical note:    
+```{r}
+table(data$ASA,data$type_obesity)
+```
+
+Save Table 1:     
+```{r}
+t1flex(table1) %>% save_as_html(path = paste(tabfolder,"/Table1.html",sep=""))
+
+properties <- prop_section(
+  page_size = page_size(orient = "landscape",
+                        width = 8.3, height = 11.7),
+  type = "continuous",
+  page_margins = page_mar()
+  )
+
+t1flex(table1) %>% 
+  save_as_docx(path = paste(tabfolder,"/Table1.docx",sep=""),
+               pr_section = properties
+               )
+```
+
+
+```{r, include=FALSE}
+rm(properties,name,table1,rndr,normal,nonormal,abbreviations,abbreviations_stats)
+```
+
+
+
+# Assessment of independent variables     
+
+The selection of variables that will be assessed is according to the following directed acyclic graph which will be used again before statistical modelling, to assess conditional independencies.     
+
+## DAG  
+```{r}
+DAG <- dagitty( 'dag {
+bb="-3.687,-2.637,5.96,2.575"
+age [adjusted,pos="-0.929,-0.900"]
+altitude_cat [pos="4.259,0.627"]
+atelectasis_percent [outcome,pos="-0.258,-2.137"]
+hb [pos="-0.789,2.123"]
+sex [adjusted,pos="-2.995,-0.744"]
+sleep_apnea [adjusted,pos="0.108,0.783"]
+spo2_VPO [outcome,pos="2.079,0.078"]
+type_obesity [exposure,pos="-2.883,0.520"]
+age -> atelectasis_percent
+age -> hb
+age -> sleep_apnea
+age -> spo2_VPO
+age -> type_obesity
+altitude_cat -> atelectasis_percent
+altitude_cat -> hb
+altitude_cat -> sleep_apnea
+altitude_cat -> spo2_VPO
+atelectasis_percent -> hb
+atelectasis_percent -> spo2_VPO
+hb -> spo2_VPO
+sex -> atelectasis_percent
+sex -> hb
+sex -> sleep_apnea
+sex -> spo2_VPO
+sex -> type_obesity
+sleep_apnea -> atelectasis_percent
+sleep_apnea -> spo2_VPO
+sleep_apnea -> type_obesity
+type_obesity -> atelectasis_percent
+type_obesity -> spo2_VPO
+}
+' )
+
+plot(DAG)
+```
+
+Other variables that are potential confounders are not shown in this DAG since they were addressed by design in this study as follows:   
+- Current COVID-19: Exclusion criteria were applied to **n=2** patients with CO-RADS 3 and **n=2** with CO-RADS 4. Only participants with low probability of COVID-19 (CO-RADS 1 and 2) were included in this study.      
+- Prior COVID-19: This was an exclusion criterion (**n=3**).   
+- Bronchiectasis: This was an exclusion criterion (n=0).      
+
+
+## Description of independent variables  
+
+#### Age  
+```{r, include=FALSE}
+attach(data)
+```
+
+```{r}
+summary(age)
+```
+Distribution of age was assessed earlier.   
+
+> The mean age was `r round(mean(data$age, na.rm=TRUE),1)` (SD: `r round(sd(data$age, na.rm=TRUE),2)`).     
+
+#### Sex  
+```{r}
+tab <- table(sex)
+tab
+prop <- round(prop.table(tab)*100,1)
+prop
+```
+> Most patients in the sample were woman (n=`r tab[1]`, `r prop[1]`%).
+
+```{r, include=FALSE}
+rm(tab,prop)
+```
+
+#### Body mass index (BMI)  
+```{r}
+summary(BMI)
+```
+
+
+```{r}
+tab <- table(type_obesity)
+tab
+prop <- round(prop.table(tab)*100,1)
+prop
+
+```
+Distribution of BMI was assessed earlier. It is right-skewed due to extreme values (verified outliers). The WHO classification of BMI for obesity class will be used to complement descriptions and for potential use later during statistical modelling.     
+
+> The median BMI was `r median(data$BMI)` (IQR: `r quantile(data$BMI, 0.25)`- `r quantile(data$BMI, 0.75)`). The distribution of BMI was right-skewed due to extreme BMI values (range: `r min(data$BMI)`- `r max(data$BMI)`). Most patients were in the class 3 obesity category (n=`r tab[3]`, `r prop[3]`%), followed by class 1 (n=`r tab[1]`, `r prop[1]`%) and 2 (n=`r tab[2]`, `r prop[2]`%). 
+
+```{r, include=FALSE}
+rm(tab,prop)
+```
+
+#### SpO2  
+```{r}
+summary(spo2_VPO)
+```
+Distribution of SpO2 during the pre-anesthetic assessment was presented earlier. It is left-skewed due to some participants exhibiting decreased SpO2. Will categorize according to clinical categories to assess the proportion of patients with decreased SpO2.   
+
+###### Proportion of patients with decreased SpO2
+
+First, create SpO2 breaks:   
+```{r}
+data <- data %>% 
+  mutate(spo2_cat = cut(spo2_VPO,
+                        breaks=c(87,90,94,100),
+                        right=TRUE,
+                        labels=c("≤90","90 to 94",">94")
+                        )
+         )
+```
+
+
+```{r, include=FALSE}
+detach(data)
+attach(data)
+# This is done to update the attached dataset with the newly created variable.   
+```
+
+
+```{r}
+tab <- table(spo2_cat)
+tab
+prop <- round(prop.table(tab)*100,1)
+prop
+```
+
+> The median SpO2 during the pre-anethetic assessment was `r median(data$spo2_VPO)` (IQR: `r quantile(data$spo2_VPO, 0.25)`-`r quantile(data$spo2_VPO, 0.75)`) %, with a minimum value of `r min(data$spo2_VPO)`%. Of these,  n=`r tab[3]` (`r prop[3]`%) had normal SpO2 (above 94%), whereas n=`r tab[2]` (`r prop[2]`%) had a value in the 90-94% range, and n=`r tab[1]` (`r prop[1]`%) had ≤90%.
+
+```{r, include=FALSE}
+rm(tab,prop)
+```
+
+#### Obstructive sleep apnea  
+```{r}
+tab <- table(sleep_apnea)
+tab
+prop <- round(prop.table(tab)*100,1)
+prop
+```
+> Patients with a diagnosis of OSA were `r prop[2]`% (n=`r tab[2]`) of the sample.  
+
+```{r, include=FALSE}
+rm(tab,prop)
+```
+
+#### Altitude   
+```{r}
+summary(altitude)
+```
+Distribution of altitude was assessed earlier. Cannot assume normal distribution. Thus, I will create a new variable categorizing values according to the [study by Crocker ME, et al](https://doi.org/10.1016/S2214-109X(19)30543-1).   
+
+```{r}
+data <- data %>% 
+  mutate(altitude_cat = cut(altitude,
+                            breaks=c(0,1000,2500),
+                            right=FALSE,
+                            labels=c("Low altitude","Moderate altitude")
+                            )
+         )
+```
+
+```{r, include=FALSE}
+detach(data)
+attach(data)
+# This is done to update the attached dataset with the newly created variable.   
+```
+
+```{r}
+tab <- table(altitude_cat)
+tab
+round(prop.table(tab)*100,1)
+```
+
+```{r, include=FALSE}
+rm(tab)
+```
+
+
+#### Hemoglobin     
+```{r}
+summary(hb)
+```
+Distribution of hemoglobin was assessed earlier. Two participants don't have a hemoglobin value.     
+
+## Relationships between independent variables  
+
+> Characteristics of participants according to BMI class are shown in **Table 1**.  
+
+### BMI and SpO2   
+Scatterplot  
+```{r}
+plot(spo2_VPO~BMI, 
+     main="Scatterplot", 
+     xlab="Body mass index (kg/m²)", 
+     ylab="SpO2 (%)"
+     )
+```
+
+Relationship does not seem to be linear (also, variables were not normally distributed, with outliers), but suggests a negative correlation. Will assess if a smooth BMI term explains SpO2 better, and if so, what is the best number of knots to model this relationship:       
+
+GAM model with k=2:   
+```{r}
+model<-gam(spo2_VPO~s(BMI,k=2))
+AIC_k2 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=4:   
+```{r}
+model<-gam(spo2_VPO~s(BMI,k=4))
+AIC_k4 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+
+GAM model with k=6:   
+```{r}
+model<-gam(spo2_VPO~s(BMI,k=6))
+AIC_k6 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=8:   
+```{r}
+model<-gam(spo2_VPO~s(BMI,k=8))
+AIC_k8 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=12:   
+```{r}
+model<-gam(spo2_VPO~s(BMI,k=12))
+AIC_k12 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+
+Best AIC:  
+```{r}
+list(AIC_k2,AIC_k4,AIC_k6,AIC_k8,AIC_k12)
+```
+All models are significantly better than linear. Thus, using a smooth term for BMI is better than modelling a linear relationship.   
+
+Regarding AIC, the models with k>6 are not better at explaining the variance. Will try a model with k=5 since the best model is expected to be anywhere between k=4 and k=6:   
+
+GAM model with k=5 (4 degrees of freedom):   
+```{r}
+model<-gam(spo2_VPO~s(BMI,k=5))
+AIC_k5 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+Best AIC:  
+```{r}
+list(AIC_k4,AIC_k5,AIC_k6)
+```
+
+Model with k=5 still offers and advantage compared to k=4 (drop in AIC). No other improvements in k-index or visual representation are achieved with higher k. Thus, will use k=5 to model.   
+
+```{r}
+fig1b <- ggplot(data, aes(BMI,spo2_VPO)) + 
+  geom_point(size=0.6,color="gray60") +
+  geom_smooth(method="gam",formula = y ~ s(x, bs = "cs", k = 5), color="cadetblue4")  + 
+  labs(y="SpO2 (%)",x="Body mass index (kg/m²)",tag="B") + 
+  ylim(83,100) + xlim(30,80) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+fig1b
+```
+   
+Negative non-monotonic relationship since SpO2 decreases, but then seems to increase slightly again at BMI 40, followed by a marked decrease as BMI decreases at values higher than ~42. 
+
+Spearman's correlation coefficient shouldn't be used due to relationship not being monotonically decreasing. However, I will calculate it just to have a rough idea (but will not report this in the paper).        
+```{r}
+spearman <- cor.test(spo2_VPO,BMI,method="spearman",exact=FALSE)
+spearman
+```
+
+##### Figure 1b 
+```{r}
+ggsave("Figure1b.png",plot=fig1b,
+       path=figfolder, 
+       width = 8,  height = 6, units = "in", dpi = 300
+       )
+```
+
+
+> BMI exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1B**, rho= `r round(spearman$estimate,3)`, p<0.001).
+
+```{r, include=FALSE}
+rm(AIC_k2,AIC_k4,AIC_k5,AIC_k6,AIC_k8,AIC_k12,model,spearman)
+```
+
+### BMI and age  
+Scatterplot  
+```{r}
+plot(age~BMI, 
+     main="Scatterplot", 
+     ylab="Age (years)", 
+     xlab="Body mass index (BMI)"
+     )
+```
+
+Datapoints scattered. Relationship probably linear, but there are influential true outliers with extreme BMI. Will assess with Spearman correlation analysis due to extreme BMI values.  
+
+```{r}
+spearman <- cor.test(age,BMI,method="spearman",exact=FALSE)
+spearman
+```
+
+> Age had a weak negative correlation with BMI (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(spearman)
+```
+
+
+### BMI and sex   
+
+```{r}
+data_BMI <- data %>% group_by(sex) 
+
+median_bmi <- data_BMI %>% 
+  summarize(n = n(), 
+            BMI_median = median(BMI), 
+            Q1 = quantile(BMI,0.25), 
+            Q3 = quantile(BMI,0.75), 
+            min = min(BMI), 
+            max = max(BMI)
+            )
+median_bmi
+```
+
+```{r}
+boxplot(BMI ~ sex)
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.  
+
+```{r}
+wil <- wilcox.test(BMI ~ sex, data = data_BMI, exact = FALSE)
+wil
+```
+
+> The median BMI was not different between men (`r round(median_bmi$BMI_median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) and women (`r round(median_bmi$BMI_median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(data_BMI,median_bmi,wil)
+```
+
+
+### BMI and sleep apnea  
+```{r}
+boxplot(BMI ~ sleep_apnea)
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.  
+
+```{r}
+data_BMI <- data %>% group_by(sleep_apnea) 
+
+median_bmi <- data_BMI %>% 
+  summarize(n = n(),
+            BMI_median = median(BMI),
+            Q1 = quantile(BMI,0.25),
+            Q3 = quantile(BMI,0.75),
+            min = min(BMI),
+            max = max(BMI)
+            )
+median_bmi
+```
+
+```{r}
+wil <- wilcox.test(BMI ~ sleep_apnea, data = data_BMI, exact = FALSE)
+wil
+```
+
+> The median BMI was significantly higher in participants with sleep apnea (`r round(median_bmi$BMI_median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) compared to those without OSA (`r round(median_bmi$BMI_median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(data_BMI,median_bmi,wil)
+```
+
+### Age and SpO2   
+
+Scatterplot
+```{r}
+plot(spo2_VPO~age, 
+     main="Scatterplot",
+     xlab="Age",
+     ylab="SpO2 (%)"
+     )
+```
+
+Do not seem to be correlated. Will apply Spearman's correlation test:  
+```{r}
+spearman <- cor.test(spo2_VPO,age,method="spearman",exact=FALSE)
+spearman
+```
+
+> Age and SpO2 were not correlated (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).
+
+```{r, include=FALSE}
+rm(spearman)
+```
+
+### Age and sex  
+
+```{r}
+boxplot(age~sex)
+```
+
+Assess distribution of age by sex:    
+
+```{r}
+data_age <- data %>% group_by(sex)
+
+ggplot(data_age,aes(x = age)) +
+  geom_histogram(fill = "firebrick3", colour = "black") +
+  facet_grid(sex ~ .)
+
+qqPlot(age ~ sex, data=data_age)
+```
+
+Distribution near-normal, but light tails for women. However, t-test could be robust to deviations from normality and differences in group size. Will assess mean and variance for further testing:  
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(),
+            age_mean = mean(age),
+            sd = sd(age),
+            variance = var(age)
+            )
+mean_age
+```  
+
+Variances are similar. However, group sizes differ my 10x. Welch's t-test more suitable:    
+
+```{r}
+t_test <- t.test(age ~ sex, data = data_age)
+t_test
+```
+
+> Mean age was similar bethween men (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and women (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`). 
+
+```{r, include=FALSE}
+rm(data_age,mean_age,t_test)
+```
+
+
+### Age and sleep apnea  
+
+```{r}
+data_age <- data %>% group_by(sleep_apnea)
+
+ggplot(data_age, aes(x = age, fill=sleep_apnea)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+
+qqPlot(age ~ sleep_apnea)
+```
+
+Distribution near-normal. Will assess mean and variance for further testing.  
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(), 
+            age_mean = mean(age), 
+            sd = sd(age), 
+            variance = var(age)
+            )
+mean_age
+```  
+
+Size per group very different, variances do not look similar. Welch's t-test more suitable:    
+
+
+```{r}
+t_test <- t.test(age ~ sleep_apnea, data = data_age)
+t_test
+```
+
+> Age was not significantly different between participants with OSA (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`). 
+
+```{r, include=FALSE}
+rm(data_age,mean_age,t_test)
+```
+
+
+### SpO2 and sex  
+
+```{r}
+boxplot(spo2_VPO ~ sex)
+```
+
+```{r}
+data_spo2 <- data %>% group_by(sex)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=sex)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+
+qqPlot(spo2_VPO ~ sex)
+```
+
+Distribution deviates from normal and small group size for men. Will assess non-parametrically.  
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(),
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```  
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ sex, data = data_spo2, exact = FALSE)
+wil
+```
+
+> The median SpO2 was not different between men (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) and women (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(data_spo2,median_spo2,wil)
+```
+
+### SpO2 and sleep apnea  
+
+```{r}
+data_spo2 <- data %>% group_by(sleep_apnea)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=sleep_apnea)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+
+qqPlot(spo2_VPO ~ sleep_apnea)
+```
+
+```{r}
+boxplot(spo2_VPO ~ sleep_apnea)
+```
+
+Distribution not normal, and smaller group size for those with sleep apnea. Will assess non-parametrically.   
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(), 
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```  
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ sleep_apnea, data = data_spo2, exact = FALSE)
+wil
+```
+
+> Patients with sleep apnea had a lower median SpO2 (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) than those without OSA (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p<0.001).  
+
+```{r, include=FALSE}
+rm(data_spo2,median_spo2,wil)
+```
+
+
+### SpO2 and altitude    
+Scatterplot  
+```{r}
+plot(spo2_VPO~altitude, data=data, 
+     main="Scatterplot", 
+     xlab="Mean altitude (meters)", 
+     ylab="SpO2 (%)"
+     )
+abline(lm(spo2_VPO~altitude),col="steelblue")
+```
+
+There does not seem to be a pattern.          
+
+Would a smooth term be useful to model altitude?   
+```{r}
+ggplot(data, aes(altitude,spo2_VPO)) + 
+  geom_point(size=0.6,color="gray40") + 
+  geom_smooth(method="loess", color="cadetblue4") +
+  ylab("SpO2 (%)") + xlab("Mean altitude (meters)") + 
+  ylim(85,100) + xlim(0,2000) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+```
+
+It is likely that a smooth term for SpO2 would be non-informative since there is no clear reasonable pattern in this smooth plot. Additionally, it is well known that any impacts in SpO2 due to altitudes up to 2000 are very limited (i.e 1 to 2 units). [REF](https://thorax.bmj.com/content/73/8/776).  
+
+I will still check if a smooth term may be better than linear in case that adjustment for this variable is needed.   
+
+GAM model with k=2:   
+```{r}
+model<-gam(spo2_VPO~s(altitude,k=2))
+summary(model)
+k.check(model)
+plot(model)
+```
+
+```{r}
+model<-gam(spo2_VPO~s(altitude,k=4))
+summary(model)
+k.check(model)
+plot(model)
+```
+
+Smooth term is not significantly better than one assuming linearity. Furthermore, the relationship with SpO2 in smooth term does not make any sense (i.e., according to prior reference, SpO2 should decrease at higher altitudes). Thus, it would be very likely that including this term would only explain noise in any case, not the true known causal relationship between SpO2 and altitude.   
+
+Lastly, will check the pattern according to altitude categories, which may be a better term to use in models in any case.     
+
+```{r}
+boxplot(spo2_VPO ~ altitude_cat)
+```
+
+```{r}
+data_spo2 <- data %>% group_by(altitude_cat)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=altitude_cat)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+
+qqPlot(spo2_VPO ~ altitude_cat)
+```
+
+Distribution deviates from normal and small group size for the moderate altitude group. Will assess non-parametrically.  
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(),
+            spo2_median = median(spo2_VPO),
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```  
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ altitude_cat, data = data_spo2, exact = FALSE)
+wil
+```
+
+> The median SpO2 was not different between low and moderate altitude categories (p=`r round(wil$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(data_spo2,median_spo2,wil)
+```
+
+
+### SpO2 and hemoglobin      
+
+```{r}
+summary(hb)
+```
+
+
+Scatterplot  
+```{r}
+plot(spo2_VPO~hb, data=data, 
+     main="Scatterplot", 
+     xlab="Hemoglobin (g/dL)", 
+     ylab="SpO2 (%)"
+     )
+abline(lm(spo2_VPO~altitude),col="red")
+```
+
+There does not seem to be a clear pattern.          
+
+Would a smooth term be useful to model SpO2?   
+```{r}
+ggplot(data, aes(hb,spo2_VPO)) + 
+  geom_point(size=0.6,color="gray40") + 
+  geom_smooth(method="loess", color="red") +
+  ylab("SpO2 (%)") + xlab("Hemoglobin (g/dL)") + 
+  ylim(85,100) +
+  theme_bw() + 
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+```
+
+Hemoglobin likely has an effect on SpO2 at lower hemoglobin values, which makes sense with what is observed in the graph. Assuming a linear relationship could lead to incorrect conclusions according to this. Nonetheless, it looks like the apparent non-linear relationship at low Hb values is due to only 2 observations with wide confidence intervals showing that the true slope could go either up, straight or down, so it may also be incorrect to assume a non-linear relationship based only on this plot. I will model to see if there is an optimal smooth term for hemoglobin or if a linear term best fits the data:    
+
+GAM model with k=2:   
+```{r}
+model<-gam(spo2_VPO~s(hb,k=2))
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=4:   
+```{r}
+model<-gam(spo2_VPO~s(hb,k=4))
+summary(model)
+k.check(model)
+plot(model)
+```
+
+The estimated degrees of freedom (edf) in both cases were 1, plus p=0.6, meaning that a linear term is better fitted to this data than a non-linear term.   
+
+```{r}
+spearman <- cor.test(spo2_VPO,hb,method="spearman",exact=FALSE)
+spearman
+```
+
+> SpO2 and hemoglobin were not correlated (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).
+
+```{r, include=FALSE}
+rm(spearman,model)
+```
+
+
+### Sex and sleep apnea   
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% 
+  drop_na(sex,sleep_apnea) %>%
+  summarize(mean_expected_freq = n()/(nlevels(sex)*nlevels(sleep_apnea)))
+
+mean_exp
+```
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+```{r}
+freq <- table(sex, sleep_apnea)
+freq
+round(prop.table(freq),4)
+```
+
+Mosaic Plot  
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(aes(x = product(sex,sleep_apnea), fill=sex),na.rm = TRUE) +
+  scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+Percentage by level (women, men):  
+```{r}
+round(prop.table(freq,1),4)*100
+```
+
+```{r, include=FALSE}
+rm(mean_exp,freq, chi)
+```
+
+> Sex was associated with OSA (p<0.001) as men had the diagnosis more frequently compared to women. 
+
+     
+# Outcome variable  
+
+Corroborate that atelectasis(Yes/No) matches atelectasis percent equal or different to 0%:   
+```{r}
+table(atelectasis,atelectasis_percent)
+```
+Yes, these do match.   
+
+## Prevalence of atelectasis  
+```{r}
+freq <- table(atelectasis)
+percent <- round((prop.table(freq)*100),2)
+total <- rbind(freq,percent)
+total
+```
+   
+Prevalence of atelectasis with 95% confidence interval   
+```{r}
+prev_atelec <- prop.test(freq, correct=FALSE)
+confint <- round((prev_atelec$conf.int*100),2)
+prev_atelec
+```
+
+> The prevalence of atelectasis was **`r percent[1]` (95%CI: `r confint`)**.   
+   
+```{r, include=FALSE}
+rm(freq, percent, prev_atelec, total, confint)
+```
+
+## Atelectasis - obesity class    
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% 
+  drop_na(type_obesity, atelectasis) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(type_obesity)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+
+```{r}
+freq <- table(type_obesity, atelectasis)
+freq
+round(prop.table(freq),4)
+```
+
+Mosaic Plot  
+```{r, fig.height=4, fig.width=6}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(aes(x = product(atelectasis,type_obesity), fill=atelectasis),na.rm = TRUE) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+```{r, include=FALSE}
+rm(mean_exp,freq, chi)
+```
+
+
+#### Atelectasis location by obesity class   
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% 
+  drop_na(type_obesity, atelectasis_location) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(type_obesity)*nlevels(atelectasis_location)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.  
+
+```{r}
+freq <- table(type_obesity, atelectasis_location)
+freq
+round(prop.table(freq),4)
+```
+
+Mosaic Plot  
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(aes(x = product(type_obesity,atelectasis_location),
+                  fill=type_obesity),na.rm = TRUE) +
+  scale_fill_manual(values=c("seagreen1","seagreen3","seagreen4")) +
+  theme_mosaic() 
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+Prevalence of atelectasis with 95% confidence intervals   
+```{r}
+#This is the prevalence of atelectasis for the total sample: 
+atelectasis_total <- data %>% group_by(atelectasis) %>% 
+  summarise(n = n()) %>%  
+  mutate(prev = n / sum(n)*100, 
+         lower = lapply(n, prop.test, n = sum(n)), 
+         upper = sapply(lower, function(x) x$conf.int[2])*100, 
+         lower = sapply(lower, function(x) x$conf.int[1])*100,
+         type_obesity = "Total") %>% 
+  mutate_at(3:5, round, 2)
+atelectasis_total$confint <- paste(atelectasis_total$lower, "-", atelectasis_total$upper)
+atelectasis_total <- atelectasis_total %>% select(-c(lower,upper))
+
+#This is the prevalence of atelectasis by obesity class: 
+atelectasis_obesity <- data %>% group_by(type_obesity, atelectasis) %>% 
+  summarise(n = n()) %>%  
+  mutate(prev = n / sum(n)*100, 
+         lower = lapply(n, prop.test, n = sum(n)), 
+         upper = sapply(lower, function(x) x$conf.int[2])*100, 
+         lower = sapply(lower, function(x) x$conf.int[1])*100) %>% 
+  mutate_at(4:6, round, 2)
+atelectasis_obesity$confint <- paste(atelectasis_obesity$lower, "-", atelectasis_obesity$upper)
+atelectasis_obesity <- atelectasis_obesity %>% select(-c(lower,upper))
+
+#This is just to combine the two prior tables:   
+atelectasis <- atelectasis_total %>% 
+  bind_rows(atelectasis_obesity) %>% 
+  relocate(type_obesity, .before = n)
+
+atelectasis
+```
+
+Location of atelectasis (Unilateral/Bilateral)   
+```{r}
+#This is the location of atelectasis for the total sample:   
+atelectasis_total_location <- data %>% 
+  filter(atelectasis=="Yes") %>% 
+  group_by(atelectasis_location) %>% 
+  summarise(Freq = n()) %>%  
+  mutate(Percentage = (round((Freq/sum(Freq)*100),digits=2)), 
+         type_obesity = "Total"
+         )
+atelectasis_total_location$sumpercent <- paste(atelectasis_total_location$Freq," (", atelectasis_total_location$Percentage, "%)")
+atelectasis_total_location <- atelectasis_total_location %>% 
+  select(-c(Freq,Percentage)) %>% 
+  pivot_wider(names_from = atelectasis_location,values_from = sumpercent)
+
+#This is the location by obesity class:  
+atelectasis_obesity_location <- data %>% 
+  filter(atelectasis=="Yes") %>% 
+  group_by(type_obesity, atelectasis_location) %>% 
+  summarise(Freq = n()) %>%  
+  mutate(Percentage = (round((Freq/sum(Freq)*100),digits=2)))
+atelectasis_obesity_location$sumpercent <- paste(atelectasis_obesity_location$Freq," (", atelectasis_obesity_location$Percentage, "%)")
+atelectasis_obesity_location <- atelectasis_obesity_location %>% select(-c(Freq,Percentage)) %>% pivot_wider(names_from = atelectasis_location,values_from = sumpercent)
+
+# This is to bind both of the location results in a single table
+location <- atelectasis_total_location %>%
+  bind_rows(atelectasis_obesity_location)
+
+location
+```
+
+
+```{r, include =FALSE}
+#This is to bind the results of the prevalence with 95% CI with the location
+# I only did this in case I wanted to write a table later.   
+atelectasis <- atelectasis %>% 
+  right_join(location,by="type_obesity") %>% 
+  mutate(confint=replace(confint, atelectasis=="No", NA),
+         Unilateral=replace(Unilateral, atelectasis=="No", NA),
+         Bilateral=replace(Bilateral, atelectasis=="No", NA)
+         )
+```
+
+> The prevalence of atelectasis was greater in higher obesity classes: class 1, n=`r atelectasis$n[3]` (`r atelectasis$prev[3]`%, 95%CI:`r atelectasis$confint[3]`); class 2, n=`r atelectasis$n[5]` (`r atelectasis$prev[5]`%, 95%CI:`r atelectasis$confint[5]`); and class 3, n=`r atelectasis$n[7]` (`r atelectasis$prev[7]`%, 95%CI:`r atelectasis$confint[7]`) (p<0.001). 
+
+> Of those who had atelectasis, the most frequent presentation was unilateral n=`r atelectasis$Unilateral[1]`, compared to bilateral n=`r atelectasis$Bilateral[1]`. When examining this by obesity class, the observed distribution was not significantly different for those with class 1, 2, and 3 obesity categories (n=`r atelectasis$Unilateral[3]`, n=`r atelectasis$Unilateral[5]`, and n=`r atelectasis$Unilateral[7]`, respectively) (p=`r round(chi$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(mean_exp, freq, chi, location, atelectasis_obesity, atelectasis_total, atelectasis_total_location, atelectasis_obesity_location, atelectasis)
+```
+
+
+#### Atelectasis Percent  
+Assess distribution if assumed to be a numeric variable:   
+```{r}
+data %>% 
+  mutate(atelectasis_percent = as.numeric(atelectasis_percent)) %>%
+  ggplot(aes(x = atelectasis_percent)) +
+  geom_histogram(colour = "black") +
+  facet_grid(type_obesity ~ .)
+
+```
+
+Distribution excluding 0:  
+```{r}
+data %>% 
+  mutate(atelectasis_percent = as.numeric(atelectasis_percent)) %>% 
+  filter(atelectasis_percent >0) %>% 
+  ggplot(aes(x = atelectasis_percent)) +
+  geom_histogram(colour = "black") +
+  facet_grid(type_obesity ~ .)
+
+```
+
+
+##### Mean atelectasis percentage  
+The following would be the mean atelectasis percentage coverage if a normal distribution were assumed, which is what has been done in some prior studies:   
+```{r}
+data %>%  summarize(
+    mean = mean(atelectasis_percent),
+    sd = sd(atelectasis_percent)
+  ) 
+```
+
+And by obesity class:   
+```{r}
+data %>% group_by(type_obesity) %>%
+  summarize(
+    mean = mean(atelectasis_percent),
+    sd = sd(atelectasis_percent)
+  ) 
+```
+
+As is evident from these numbers, assuming normality causes standard deviation to capture negative values, which is impossible in reality for this variable.   
+
+Thus, bootstrapping the mean and 95%CI is expected to lead to more appropriate estimates:   
+```{r}
+boot_atel <- one.boot(data$atelectasis_percent, mean, R=10000)
+mean_boot <- mean(boot_atel$t)
+mean_boot
+```
+
+```{r}
+boot_ci <- boot.ci(boot_atel)
+boot_ci
+```
+The bias-corrected and accelerated (BCa) bootstrap interval is known to lead to more stable intervals with better coverage. Will report this. However, it is a good thing that here 95%CI through different methods do not lead to widely different results.  
+
+Now, I will calculate this for different BMI categories:   
+```{r}
+data_class_1 <- data %>% filter(type_obesity=="Class 1 Obesity") 
+data_class_2 <- data %>% filter(type_obesity=="Class 2 Obesity") 
+data_class_3 <- data %>% filter(type_obesity=="Class 3 Obesity") 
+```
+
+Class 1:   
+```{r}
+boot_class1 <- one.boot(data_class_1$atelectasis_percent, mean, R=10000)
+mean_boot_class1 <- mean(boot_class1$t)
+mean_boot_class1
+boot_ci_class1 <- boot.ci(boot_class1)
+boot_ci_class1
+```
+
+Class 2:   
+```{r}
+boot_class2 <- one.boot(data_class_2$atelectasis_percent, mean, R=10000)
+mean_boot_class2 <- mean(boot_class2$t)
+mean_boot_class2
+boot_ci_class2 <- boot.ci(boot_class2)
+boot_ci_class2
+```
+
+Class 3:   
+```{r}
+boot_class3 <- one.boot(data_class_3$atelectasis_percent, mean, R=10000)
+mean_boot_class3 <- mean(boot_class3$t)
+mean_boot_class3
+boot_ci_class3 <- boot.ci(boot_class3)
+boot_ci_class3
+```
+
+> The mean atelectasis percentage coverage in the sample was `r round(mean_boot,2)`% (95%CI:`r round(boot_ci$bca[1,4],2)`-`r round(boot_ci$bca[1,5],2)`) and according to obesity categories: class 1 (`r round(mean_boot_class1,2)`%, 95%CI:`r round(boot_ci_class1$bca[1,4],2)`-`r round(boot_ci_class1$bca[1,5],2)`), class 2 (`r round(mean_boot_class2,2)`%, 95%CI:`r round(boot_ci_class2$bca[1,4],2)`-`r round(boot_ci_class2$bca[1,5],2)`), and class 3 (`r round(mean_boot_class3,2)`%, 95%CI:`r round(boot_ci_class3$bca[1,4],2)`-`r round(boot_ci_class3$bca[1,5],2)`).
+
+```{r, include=FALSE}
+rm(boot_atel,mean_boot,boot_ci,data_class_1,data_class_2,data_class_3,boot_class1,mean_boot_class1,boot_ci_class1,boot_class2,mean_boot_class2,boot_ci_class2,boot_class3,mean_boot_class3,boot_ci_class3)
+```
+
+##### Atelectasis percentage by obesity class   
+
+Now, I will continue assessing atelectasis percentage if assumed to be categorical ordinal:      
+   
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% mutate(atelectasis_percent=factor(atelectasis_percent)) %>% summarize(mean_expected_freq = n()/(nlevels(type_obesity)*nlevels(atelectasis_percent)))
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.  
+
+```{r}
+tab <- table(atelectasis_percent,type_obesity)
+tab
+prop.table(tab)
+prop_fig2a <- prop.table(tab,margin=2)
+prop_fig2a
+```
+
+```{r}
+barplot(tab,beside=TRUE)
+```
+
+```{r}
+chi <- chisq.test(tab, correct=FALSE)
+chi
+```
+
+
+##### Figure 2a  
+```{r}
+barplot(prop_fig2a,beside=TRUE,ylim=c(0,1),ylab="Relative frequency",
+        col=brewer.pal(9,"Blues"),
+        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%","27.5%"),
+        space = c(0.2, 1.5)
+        )
+Figure2a <- recordPlot()
+```    
+
+```{r, results='hide'}
+png(filename=paste(figfolder,"/Figure2a.png",sep=""),width=8, height=5, units="in", res=300)
+Figure2a
+dev.off
+```
+
+
+```{r, include=FALSE}
+rm(mean_exp,freq,percent,tab,chi,Figure2a,prop_fig2a)
+```
+
+##### Smooth term?   
+Scatterplot  
+```{r}
+plot(atelectasis_percent~BMI, data=data, main="Scatterplot", xlab="Body mass index (kg/m²)", ylab="Atelectasis percent (%)")
+abline(lm(atelectasis_percent~BMI),col="darkblue")
+```
+
+Atelectasis percent seems to increase as BMI increases. However, relationship is not linear.                
+
+Would a smooth term be more useful to model SpO2?   
+```{r}
+ggplot(data, aes(BMI,atelectasis_percent)) + 
+  geom_point(size=0.6,color="gray40") + 
+  geom_smooth(method="loess", color="darkblue") +
+  ylab("Atelectasis percent (%)") + xlab("Body mass index (kg/m²)")  +
+  theme_bw() + 
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)),
+        axis.text.y = element_text(size=rel(1.2))
+        )
+```
+
+What is the pattern when excluding participants with 0% atelectasis?   
+```{r}
+data %>% filter (atelectasis_percent>0) %>% 
+  ggplot(aes(BMI,atelectasis_percent)) +
+  geom_point(size=0.6,color="gray40") + 
+  geom_smooth(method="loess", color="darkblue") +
+  ylab("Atelectasis percent (%)") + xlab("Body mass index (kg/m²)")  +
+  theme_bw() + 
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+```
+
+
+GAM model with k=2:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=2))
+AIC_k2 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=4:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=4))
+AIC_k4 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+
+GAM model with k=6:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=6))
+AIC_k6 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=8:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=8))
+AIC_k8 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=10:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=10))
+AIC_k10 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+Best AIC:  
+```{r}
+list(AIC_k2,AIC_k4,AIC_k6,AIC_k8,AIC_k10)
+```
+All models are significantly better than linear. Thus, using a smooth term for BMI to predict atelectasis percent is better than modelling a linear relationship.   
+
+Regarding AIC, greatest improvement in AIC is k=6. Will model with k=5 and k=7 to compare      
+
+GAM model with k=5:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=5))
+AIC_k5 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=7:   
+```{r}
+model<-gam(atelectasis_percent~s(BMI,k=7))
+AIC_k7 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+Best AIC:  
+```{r}
+list(AIC_k5,AIC_k6,AIC_k7)
+```
+
+k=6 offers the lowest AIC. Will keep k=6 to model.      
+
+```{r}
+fig1a <- ggplot(data, aes(BMI,atelectasis_percent)) + 
+  geom_point(size=0.6,color="gray60") +
+  geom_smooth(method="gam",formula = y ~ s(x, bs = "cs", k = 6), color="darkblue") + 
+  labs(y="Atelectasis percent (%)",
+       x="Body mass index (kg/m²)",
+       tag="A") +
+  xlim(30,80) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+
+fig1a
+```
+   
+Negative monotonic relationship since SpO2 decreases as BMI increases. 
+
+Will assess Spearman's correlation again only to have a rough idea (will not report this in the paper):    
+```{r}
+spearman <- cor.test(spo2_VPO,atelectasis_percent,method="spearman",exact=FALSE)
+spearman
+```
+
+> Atelectasis percent exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1A**, rho= `r round(spearman$estimate,3)`, p<0.001).
+
+Interestingly, this figure is almost a mirror image of the priorly created plot for SpO2 ~ BMI.   
+
+##### Figure 1a    
+```{r}
+ggsave("Figure1a.png",plot=fig1a,
+       path=figfolder, 
+       width = 8,  height = 6, units = "in", 
+       dpi = 300
+       )
+```
+
+
+```{r, include=FALSE}
+rm(AIC_k2,AIC_k3,AIC_k4,AIC_k5,AIC_k6,AIC_k7,AIC_k8,AIC_k10,model,spearman)
+```
+
+
+## Atelectasis - age   
+
+```{r}
+boxplot(age~atelectasis)
+```
+
+Assess distribution of age by atelectasis (yes/no):    
+
+```{r}
+data_age <- data %>% group_by(atelectasis)
+
+ggplot(data_age,aes(x = age)) +
+  geom_histogram(fill = "lightsteelblue4", colour = "black") +
+  facet_grid(atelectasis ~ .)
+
+qqPlot(age ~ atelectasis, data=data_age)
+```
+
+Distribution near-normal, will assess mean and variance for further testing:  
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(),
+            age_mean = mean(age),
+            sd = sd(age),
+            variance = var(age)
+            )
+mean_age
+```  
+
+Variances near-similar, but group sizes differ. Welch's t-test more suitable:    
+
+```{r}
+t_test <- t.test(age ~ atelectasis, data = data_age)
+t_test
+```
+
+> Age was similarly distributed among patients without atelectasis (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those with atelectasis (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`). 
+
+```{r, include=FALSE}
+rm(data_age,mean_age,t_test)
+```
+
+
+
+## Atelectasis - sex   
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% drop_na(sex, atelectasis) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(sex)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.   
+
+```{r}
+freq <- table(sex, atelectasis)
+freq
+round(prop.table(freq),4)
+```
+
+```{r}
+percent <- round((prop.table(freq, 1)*100),2)
+percent
+```
+
+
+Mosaic Plot  
+```{r, fig.height=4, fig.width=6}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(aes(x = product(atelectasis,sex), fill=atelectasis),na.rm = TRUE) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+> There were no significant differences in atelectasis ocurrence between men (`r round(percent[2,1],1)`%) and women (`r round(percent[1,1],1)`%) (p=`r round(chi$p.value,3)`). 
+
+```{r, include=FALSE}
+rm(mean_exp,freq,percent,chi)
+```
+
+
+## Atelectasis - OSA   
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% 
+  drop_na(sleep_apnea, atelectasis) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(sleep_apnea)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.   
+
+```{r}
+freq <- table(sleep_apnea, atelectasis)
+freq
+round(prop.table(freq),4)
+```
+
+```{r}
+percent <- round((prop.table(freq, 1)*100),2)
+percent
+```
+
+
+Mosaic Plot  
+```{r, fig.height=4, fig.width=6}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(aes(x = product(atelectasis,sleep_apnea), fill=atelectasis),na.rm = TRUE) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+> Patients with a diagnosis of obstructive sleep apnea had atelectasis more frequently (`r round(percent[2,1],1)`%) than those without the diagnosis (`r round(percent[1,1],1)`%) (p<0.001). 
+
+```{r, include=FALSE}
+rm(mean_exp,freq, percent, chi)
+```
+
+
+#### Atelectasis location by OSA   
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data %>% 
+  drop_na(sleep_apnea, atelectasis_location) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(sleep_apnea)*nlevels(atelectasis_location)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.   
+
+```{r}
+freq <- table(sleep_apnea, atelectasis_location)
+freq
+round(prop.table(freq),4)
+```
+
+```{r}
+percent <- round((prop.table(freq, 1)*100),2)
+percent
+```
+
+Mosaic Plot  
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(aes(x = product(atelectasis_location,sleep_apnea), 
+                  fill=atelectasis_location),na.rm = TRUE) +
+  scale_fill_manual(values=c("seagreen1","seagreen4")) +
+  theme_mosaic() 
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+> The location of atelectasis was not different among patients with and without OSA (p=`r round(chi$p.value,3)`).
+
+```{r, include=FALSE}
+rm(mean_exp,freq, percent, chi)
+```
+
+
+
+## Atelectasis - SpO2  
+
+```{r}
+data_spo2 <- data %>% group_by(atelectasis) 
+
+median_spo2 <- data_spo2 %>% summarize(n = n(),
+                                       spo2_median = median(spo2_VPO), 
+                                       Q1 = quantile(spo2_VPO,0.25), 
+                                       Q3 = quantile(spo2_VPO,0.75), 
+                                       min = min(spo2_VPO), 
+                                       max = max(spo2_VPO)
+                                       )
+median_spo2
+```
+
+```{r}
+boxplot(spo2_VPO ~ atelectasis)
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.  
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ atelectasis, data = data_spo2, exact = FALSE)
+wil
+```
+
+> The median SpO2 was significantly lower in patients with atelectasis (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) compared to those without (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) (p<0.001).  
+
+```{r, include=FALSE}
+rm(data_spo2,median_spo2,wil)
+```
+
+## Atelectasis location - SpO2  
+
+```{r}
+data_spo2 <- data %>% 
+  group_by(atelectasis_location) %>% 
+  drop_na(atelectasis_location)
+
+median_spo2 <- data_spo2 %>% summarize(n = n(),
+                                       spo2_median = median(spo2_VPO), 
+                                       Q1 = quantile(spo2_VPO,0.25), 
+                                       Q3 = quantile(spo2_VPO,0.75), 
+                                       min = min(spo2_VPO), 
+                                       max = max(spo2_VPO)
+                                       )
+median_spo2
+```
+
+```{r}
+boxplot(spo2_VPO ~ atelectasis_location, data=data_spo2)
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.  
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ atelectasis_location, data = data_spo2, exact = FALSE)
+wil
+```
+
+> The median SpO2 was significantly lower in patients with bilateral atelectasis (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those with unilateral atelectasis (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+
+```{r, include=FALSE}
+rm(data_spo2,median_spo2,wil)
+```
+
+
+## Atelectasis percent - SpO2   
+
+### Smooth term?   
+Scatterplot  
+```{r}
+plot(spo2_VPO~atelectasis_percent, data=data, 
+     main="Scatterplot", 
+     xlab="Atelectasis percent (%)", 
+     ylab="SpO2 (%)")
+```
+
+Decreasing SpO2 as atelectasis percent increases.             
+
+Would a smooth term be more useful to model SpO2?   
+```{r}
+ggplot(data, aes(atelectasis_percent,spo2_VPO)) + 
+  geom_point(size=0.6,color="gray40") + 
+  geom_smooth(method="loess", color="black") +
+  ylab("SpO2 (%)") + xlab("Atelectasis percent (%)") + 
+  ylim(85,100) +
+  theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+```
+
+GAM model with k=2:   
+```{r}
+model<-gam(spo2_VPO~s(atelectasis_percent,k=2))
+AIC_k2 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=4:   
+```{r}
+model<-gam(spo2_VPO~s(atelectasis_percent,k=4))
+AIC_k4 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+
+GAM model with k=6:   
+```{r}
+model<-gam(spo2_VPO~s(atelectasis_percent,k=6))
+AIC_k6 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+GAM model with k=8:   
+```{r}
+model<-gam(spo2_VPO~s(atelectasis_percent,k=8))
+AIC_k8 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+Best AIC:  
+```{r}
+list(AIC_k2,AIC_k4,AIC_k6,AIC_k8)
+```
+All models are significantly better than linear. Thus, using a smooth term for atelectasis percent is better than modelling a linear relationship.   
+
+Regarding AIC, no model offers greater improvement in AIC than k=6. Will try a model with k=5:   
+
+GAM model with k=5:   
+```{r}
+model<-gam(spo2_VPO~s(atelectasis_percent,k=5))
+AIC_k5 <- AIC(model)
+summary(model)
+k.check(model)
+plot(model)
+```
+
+Best AIC:  
+```{r}
+list(AIC_k4,AIC_k5,AIC_k6)
+```
+
+There is a drop in AIC for k=5, which also offers the best k-index. Nonetheless, one problem with this is that the extra knot is explaining a clump around 12.%, for which there was only one single observation. Thus, it is likely that this clump and additional knot is only explaining noise in the data, and would thus not be a good representation of the trend in the variable. Thus, will keep k=4 to model as this model offers the best visual representation of the trend in all categories.          
+
+```{r}
+fig1c <- ggplot(data, aes(atelectasis_percent,spo2_VPO)) + 
+  geom_point(size=0.6, color="gray60",
+             position = position_jitter(seed = 1, width = .2)) +
+  geom_smooth(method="gam",formula = y ~ s(x, bs = "cs", k = 4), color="black") + 
+  ylim(83,100) +
+  labs(y="SpO2 (%)",x="Atelectasis percent (%)",tag="C") +
+  theme_bw() + 
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+
+fig1c
+```
+   
+Negative monotonic relationship since SpO2 decreases as BMI increases. Will assess Spearman's correlation coefficient:    
+```{r}
+spearman <- cor.test(spo2_VPO,atelectasis_percent,method="spearman",exact=FALSE)
+spearman
+```
+
+> Atelectasis percent exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1C**, rho= `r round(spearman$estimate,3)`, p<0.001).
+
+##### Figure 1c    
+```{r}
+ggsave("Figure1c.png",plot=fig1c,
+       path=figfolder, 
+       width = 8,  height = 6, units = "in", 
+       dpi = 300)
+```
+
+#### Figure 1   
+```{r}
+blank_plot = ggplotGrob(ggplot(NULL)); 
+blank_plot$grobs[[max(which(blank_plot$layout$name == "panel"))]] = nullGrob(); 
+grid.draw(blank_plot)
+
+figure1 <- grid.arrange(fig1a, blank_plot, fig1b, fig1c, ncol=2)
+```
+
+Save figure:   
+```{r}
+ggsave("Figure1.png",plot=figure1,
+       path=figfolder, 
+       width = 12,  height = 10, units = "in", 
+       dpi = 300)
+```
+
+
+```{r, include=FALSE}
+rm(AIC_k2,AIC_k4,AIC_k5,AIC_k6,AIC_k8,model,spearman,figure1,fig1a,fig1b,fig1c,blank_plot)
+```
+
+```{r, include=FALSE}
+detach(data)
+```
+
+### Ordinal variable  
+
+Since there is only one participant in the 30% category, will collapse with the 20 category for further analyses:   
+```{r}
+datamodel <- data
+datamodel$atelectasis_percent <- factor(datamodel$atelectasis_percent, 
+                                        levels=c(0,2.5,5,7.5,10,12.5,15,17.5,27.5)) %>% 
+  fct_collapse("17.5%" = c(17.5,27.5)) %>% 
+  factor(labels = c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%"))
+
+table(datamodel$atelectasis_percent)
+```
+
+Assess distribution of SpO2 by atelectasis percent categories:    
+```{r}
+data_spo2 <- datamodel %>% group_by(atelectasis_percent)
+
+ggplot(data_spo2,aes(x = spo2_VPO)) +
+  geom_histogram(fill = "aquamarine", colour = "black") +
+  facet_grid(atelectasis_percent ~ .)
+```
+
+Distribution not normal, group sizes are different and there are outliers in both directions, depending where you are located. Thus, will proceed with non-parametric assessment:   
+
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(), 
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```
+
+```{r}
+krus <- kruskal.test(spo2_VPO ~ atelectasis_percent, data = data_spo2)
+krus
+```
+
+> There was a decreasing trend in median SpO2 with higher atelectasis percentage extension (p<0.001).   
+
+```{r}
+ggplot(datamodel, aes(x = atelectasis_percent, y = spo2_VPO)) + 
+  geom_boxplot(width = .4, outlier.shape = NA, fill="aliceblue") +
+  geom_point(size = 1.5, alpha = .3, 
+             position = position_jitter(seed = 1, width = .1)) + 
+  ylab("SpO2 (%)") + xlab("Atelectasis percent") + 
+  ylim(85,100) +
+  labs(tag="Kruskall-Wallis: p<0.001") + 
+  theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+        axis.ticks.length.x = unit(.1, "in"),
+        axis.text.x = element_text(size=rel(1.2)),
+        axis.text.y = element_text(size=rel(1.2)),
+        plot.tag.position = "top", 
+        plot.tag = element_text(size=rel(0.9))
+        )
+```
+
+```{r, include=FALSE}
+rm(data_spo2,median_spo2,krus) 
+```
+
+
+## Relationship between OSA, obesity type and atelectasis percent:   
+
+```{r}
+datamodel %>% mutate(
+  type_obesity=fct_recode(type_obesity, 
+                          "1"="Class 1 Obesity", 
+                          "2"="Class 2 Obesity", 
+                          "3"="Class 3 Obesity")) %>% 
+  count(type_obesity, sleep_apnea, atelectasis_percent) %>%
+  ggplot(aes(x = sleep_apnea, y = atelectasis_percent, color = sleep_apnea)) +
+  geom_point(aes(group = sleep_apnea, size = n)) +
+  scale_color_manual(values=c("gray40","darkred")) +
+  facet_wrap(~type_obesity, scales = "free_x",
+             labeller = labeller(type_obesity = label_both)) +
+  scale_size(breaks = c(1, 10, 20, 30, 40, 50, 60)) + 
+  theme_light()
+```
+
+Sleep apnea was more common with higher BMI categories and also with higher atelectasis percentage. Atelectasis percent increases at higher obesity classes.   
+
+
+# Statistical Modelling    
+Plot DAG model to visualizes again:    
+```{r}
+plot(DAG)
+```
+
+## Implied conditional independencies in DAG:  
+
+This procedure was performed as suggested in [this article](https://doi.org/10.1002/cpz1.45).  
+
+```{r, echo=FALSE}
+impliedConditionalIndependencies(DAG)
+```
+
+Test conditional independencies:
+```{r}
+subsetcondit <- datamodel %>% select(c("age",
+                                       "sex",
+                                       "type_obesity",
+                                       "spo2_VPO",
+                                       "hb",
+                                       "sleep_apnea",
+                                       "atelectasis_percent",
+                                       "altitude_cat")
+                                     ) 
+
+subsetcondit <- subsetcondit %>% 
+  mutate(sex = as.numeric(sex),
+         sleep_apnea = as.numeric(sleep_apnea)
+         )
+
+corr <- lavCor(subsetcondit,
+               ordered=c("sex",
+                         "type_obesity",
+                         "sleep_apnea",
+                         "atelectasis_percent",
+                         "altitude_cat",
+                         "spo2_VPO")
+               )
+
+corr
+```
+
+
+```{r}
+localtests <- localTests(DAG, sample.cov=corr, sample.nobs=nrow( subsetcondit ) )
+localtests
+```
+
+```{r}
+plotLocalTestResults(localtests)
+```
+
+Conditional independence assumption OK. Minimal set of adjustment is ***age***, ***sex***, and ***sleep_apnea***.       
+
+```{r, include=FALSE}
+rm(corr,localtests,subsetcondit)
+```
+
+
+# Prevalence Ratio   
+This [paper](https://doi.org/10.1016/j.annepidem.2023.08.001) and accompanying code were used to calculate prevalence ratios.    
+
+A modified Poisson regression model with robust errors will be applied to obtain prevalence ratios.
+
+## Crude prevalence ratio   
+```{r}
+dataprev <- data %>% 
+  mutate(atelectasis = as.numeric(
+    as.character(
+      fct_recode(atelectasis,
+                 "0"="No",
+                 "1"="Yes"))))
+
+
+poisson_fit <- glm(atelectasis ~ type_obesity,
+                   data = dataprev,
+                   family = poisson(link = log)
+                   )
+
+tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
+```
+
+Robust standard errors:  
+```{r}
+covmat <- vcovHC(poisson_fit, type = "HC0")
+covmat
+```
+
+```{r}
+#Calculate the standard error
+se <- sqrt(diag(covmat))
+
+# Bind together model output
+#  1. exponentiated coefficients
+#  2. robust standard errors
+#  3. 95% confidence intervals
+# Note that qnorm(0.975) approximately equals 1.96
+model_output <- cbind(
+  Estimate = exp(coef(poisson_fit)),
+  `Robust SE` = se,
+  Lower = exp(coef(poisson_fit) - qnorm(0.975) * se),
+  Upper = exp(coef(poisson_fit) + qnorm(0.975) * se)
+)
+
+# Coerce model_output into a data frame
+model_output <- as.data.frame(round(model_output,2))
+model_output
+```
+
+## Adjusted prevalence ratio   
+```{r}
+poisson_fit <- glm(atelectasis ~ type_obesity + age + sex + sleep_apnea,
+data = dataprev,
+family = poisson(link = log))
+
+tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
+```
+
+Robust standard errors:  
+```{r}
+covmat <- vcovHC(poisson_fit, type = "HC0")
+covmat
+```
+
+```{r}
+#Calculate the standard error
+se <- sqrt(diag(covmat))
+
+# Bind together model output
+#  1. exponentiated coefficients
+#  2. robust standard errors
+#  3. 95% confidence intervals
+# Note that qnorm(0.975) approximately equals 1.96
+model_output2 <- cbind(
+  Estimate = exp(coef(poisson_fit)),
+  `Robust SE` = se,
+  Lower = exp(coef(poisson_fit) - qnorm(0.975) * se),
+  Upper = exp(coef(poisson_fit) + qnorm(0.975) * se)
+)
+
+# Coerce model_output into a data frame
+model_output2 <- as.data.frame(round(model_output2,2))
+model_output2
+```
+
+### Table 2   
+```{r}
+model_output <- model_output %>% 
+  dplyr::slice(2:3) %>%
+  rename(PR = Estimate, SE = `Robust SE`) %>% 
+  mutate("95%CI" = paste(Lower,Upper,sep="-")) %>% 
+  select(-c(Lower,Upper))
+
+model_output2 <- model_output2 %>% 
+  dplyr::slice(2:3) %>%
+  rename(aPR = Estimate, aSE = `Robust SE`) %>% 
+  mutate("a95%CI" = paste(Lower,Upper,sep="-")) %>% 
+  select(-c(Lower,Upper))
+
+table2 <- dplyr::bind_cols(model_output, model_output2) %>% 
+  rownames_to_column(var = "Category") %>% 
+  mutate_at("Category", str_replace, "type_obesity", "")
+
+flextable(table2) %>% 
+  save_as_docx(path = paste(tabfolder,"/Table2.docx",sep=""))
+
+table2
+```
+
+
+```{r, include=FALSE}
+rm(dataprev,poisson_fit,covmat,se,model_output, model_output2,table2)
+```
+
+
+# Ordinal Logistic Regression Model   
+
+Some code available in the following [resource](https://tdunn.ca/posts/2020-03-15-ordinal-regression-in-r-part-1) was used for these analyses:   
+- Dunn, Taylor. 2020. “Ordinal Regression in R: Part 1.” March 15, 2020.    
+
+
+Rename type obesity levels to facilitate reading of results:  
+```{r}
+datamodel <- datamodel %>% 
+  mutate(type_obesity=fct_recode(type_obesity,
+                                 "1"="Class 1 Obesity",
+                                 "2"="Class 2 Obesity",
+                                 "3"="Class 3 Obesity"),
+         atelectasis_percent=ordered(atelectasis_percent)
+         ) 
+```
+
+Visualize pattern of atelectasis percent increase by obesity type category.  
+```{r}
+datamodel %>% 
+  ggplot(aes(x = type_obesity, fill = atelectasis_percent)) + 
+  geom_bar() +  
+  scale_fill_manual(values = brewer.pal(8,"Blues")) + 
+  theme_minimal()
+```
+
+## Univariable models   
+
+The **loglog** link function will be used for all models since this distribution provides the best fit for the fully adjusted model:   
+
+```{r}
+datamodel %>%
+  nest(data = everything()) %>%
+ crossing(
+    link = c("logit", "probit", "cloglog", "loglog", "cauchit"),
+    threshold = c("flexible", "equidistant", "symmetric", "symmetric2")
+  ) %>%
+  mutate(
+    mod = map2(
+      data, link,
+      ~clm(atelectasis_percent ~ type_obesity + sex + age + sleep_apnea, 
+        data = .x, link = .y
+      )
+    )
+  ) %>%
+  mutate(
+    mod_summary = map(
+      mod,
+      ~glance(.x) %>% mutate(logLik = as.numeric(logLik))
+    )
+  ) %>%
+  unnest(mod_summary) %>%
+  dplyr::select(link, threshold, logLik, edf, AIC, BIC) %>%
+  arrange(logLik) %>%
+  gt()
+```
+
+Obesity class:   
+```{r, warning=TRUE}
+fit_BMI <- clm(atelectasis_percent~type_obesity,
+               data = datamodel, 
+               link = "loglog", threshold = "flexible")
+
+summary(fit_BMI)
+```
+
+```{r, warning=TRUE}
+nominal_test(fit_BMI)
+scale_test(fit_BMI)
+```
+
+Output not showing result of nominal test. When running traceback, this seems to be a problem of failure to converge of the nominal test function. However, this does not constitute a problem in the model convergence itself as shown bellow:   
+```{r}
+convergence(fit_BMI)
+```
+
+This problem has been signalled in [post1](https://stats.stackexchange.com/questions/411618/why-is-my-output-for-nominal-test-incomplete) and [post2](https://github.com/runehaubo/ordinal/issues/15), without an available solution yet within the package. However, running a model with a nominal term for the explanatory variable and comparing them trough ANOVA is an alternative way of testing the proportional odds assumption:   
+
+```{r, warning=TRUE}
+fit_BMInom <- clm(atelectasis_percent ~ 1, nominal= ~ type_obesity, 
+                  data = datamodel, 
+                  link = "loglog", threshold = "flexible")
+
+summary(fit_BMInom)
+```
+
+Nominal model failed to converge, likely due to many new subgroups needed to create a nominal model, many of which may have been empty. 
+
+One additional problem that may have led to the inability to test the proportional odds assumption is that there is one category with only one observation:  
+```{r}
+table(datamodel$atelectasis_percent)
+```
+
+It is known that having few observations per category does not affect the results of ordinal regression, and that some categories may need to be combined to assess proportional odds assumption. [REF](https://stats.stackexchange.com/q/48844)
+
+Will collapse categories to test:  
+```{r}
+data_prop <- datamodel 
+data_prop$atelectasis_percent <- fct_collapse(data_prop$atelectasis_percent,
+                                              "0%" = c("0%","2.5%"),
+                                              "5%" = c("5%","7.5%"),
+                                              "10%" = c("10%","12.5%"),
+                                              "15%" = c("15%","17.5%")
+                                              )
+
+table(data_prop$atelectasis_percent)
+```
+
+```{r, warning=TRUE}
+fit_BMI2 <- clm(atelectasis_percent~type_obesity,
+                data = data_prop, 
+                link = "loglog", threshold = "flexible")
+
+summary(fit_BMI2)
+```
+
+```{r, warning=TRUE}
+nominal_test(fit_BMI2)
+scale_test(fit_BMI2)
+```
+
+```{r, warning=TRUE}
+fit_BMInom2 <- clm(atelectasis_percent ~ 1, nominal= ~ type_obesity, 
+                   data = data_prop, 
+                   link = "loglog", threshold = "flexible")
+
+summary(fit_BMInom2)
+```
+
+```{r, warning=TRUE}
+anova(fit_BMI2,fit_BMInom2)
+```
+
+The model with nominal effects has a marginally lower AIC (360.05) than the ordinal model (363.66) p=0.02. Proportional odds assumption not met. However, nominal model had problem with convergence (unstable estimates).    
+
+One alternative would be to fully model through a multinomial logistic regression model. As already shown, nominal models have failed to converge and have reduced statistical power.    
+
+Other alternatives would be to "ignore non-proportional odds, knowing that the odds ratio may still be very meaningful, or fit a partial proportional odds model or constrained partial PO model using either Bayesian modeling with blrm or using a frequentist procedure with the VGAM package vglm function" [REF1](https://discourse.datamethods.org/t/ordinal-regression-when-odds-are-not-proportional/4550) plus [REF2](https://www.fharrell.com/post/po/).   
+
+Despite not meeting proportional odds assumption, I will present results of univariable and multivariable ordinal regression models to present first-order effects since this model is parsimonious and easier to understand. I will then try to create a partial PO model to further characterize and understand exposure-effect relationships.   
+
+### Covariates univariable models    
+
+Age   
+```{r}
+fit_age <- clm(atelectasis_percent~age,
+               data = datamodel, 
+               link = "loglog", threshold = "flexible")
+
+summary(fit_age)
+```
+
+```{r}
+nominal_test(fit_age)
+scale_test(fit_age)
+```
+
+Proportional odds assumption not showing either. Perhaps this is a problem due to centering. Will center and re-assess.   
+
+```{r}
+datamodel <- datamodel %>% mutate(agec = age/mean(age))
+```
+
+```{r}
+fit_age2 <- clm(atelectasis_percent~agec,
+                data = datamodel, 
+                link = "loglog", threshold = "flexible")
+
+summary(fit_age2)
+```
+
+```{r}
+nominal_test(fit_age2)
+scale_test(fit_age2)
+```
+
+Still not shown. Nonetheless, proportional odds assumption is not quite as relevant for covariates. Will assess remaining variables to decide best approach.      
+
+```{r}
+uni_age <- tidy(fit_age, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+   cols_label(conf.low = "95%CI")
+
+uni_age
+```
+
+
+Sex     
+```{r}
+fit_sex <- clm(atelectasis_percent~sex,
+               data = datamodel, 
+               link = "loglog", threshold = "flexible")
+
+summary(fit_sex)
+```
+
+```{r}
+nominal_test(fit_sex)
+scale_test(fit_sex)
+```
+
+Does not hold for sex either.   
+
+```{r}
+uni_sex <- tidy(fit_sex, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+  cols_label(conf.low = "95%CI")
+
+ uni_sex
+```
+
+
+Sleep Apnea        
+```{r}
+fit_OSA <- clm(atelectasis_percent~sleep_apnea,
+               data = datamodel, link = "loglog", 
+               threshold = "flexible")
+
+summary(fit_OSA)
+```
+
+```{r}
+nominal_test(fit_OSA)
+scale_test(fit_OSA)
+```
+
+Does not hold for OSA either.   
+
+```{r}
+uni_OSA <- tidy(fit_OSA, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2)  %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+  cols_label(conf.low = "95%CI")
+
+uni_OSA
+```
+
+
+```{r, include=FALSE}
+rm(uni_age,uni_BMI,uni_OSA,uni_sex,fit_age,fit_BMI,fit_BMInom,fit_OSA,fit_sex)
+```
+
+
+
+## Ordinal (collapsed factors) Logistic Regression 
+
+Since proportional odds not met for prior model with multiple ordered categories, I will use the priorly collapsed categories to model since AIC was also much lower when including collapsed factors. Perhaps this solves problems in prior models?   
+
+### Univariable models    
+
+Type obesity (ordinal model created before)      
+```{r}
+uni_BMI <- tidy(fit_BMI2, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+   cols_label(conf.low = "95%CI")
+
+uni_BMI
+```
+
+
+Age   
+```{r}
+fit_age <- clm(atelectasis_percent~age,
+               data = data_prop, 
+               link = "loglog", threshold = "flexible")
+
+summary(fit_age)
+```
+
+```{r}
+nominal_test(fit_age)
+scale_test(fit_age)
+```
+
+Proportional odds assumption not showing either. Will try centered variable.   
+
+```{r}
+data_prop <- data_prop %>% mutate(agec = age/mean(age))
+```
+
+```{r}
+fit_age2 <- clm(atelectasis_percent~agec,
+                data = data_prop, 
+                link = "loglog", threshold = "flexible")
+
+summary(fit_age2)
+```
+
+```{r}
+nominal_test(fit_age2)
+scale_test(fit_age2)
+```
+
+Still not shown. Nonetheless, proportional odds assumption is not quite as relevant for covariates. Will assess remaining variables to decide best approach.      
+
+```{r}
+uni_age <- tidy(fit_age, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+   cols_label(conf.low = "95%CI")
+
+uni_age
+```
+
+
+Sex     
+```{r}
+fit_sex <- clm(atelectasis_percent~sex,
+               data = data_prop, 
+               link = "loglog", threshold = "flexible")
+
+summary(fit_sex)
+```
+
+```{r}
+nominal_test(fit_sex)
+scale_test(fit_sex)
+```
+
+Sex OK.   
+
+```{r}
+uni_sex <- tidy(fit_sex, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+  cols_label(conf.low = "95%CI")
+
+ uni_sex
+```
+
+
+Sleep Apnea        
+```{r}
+fit_OSA <- clm(atelectasis_percent~sleep_apnea,
+               data = data_prop, 
+               link = "loglog", threshold = "flexible")
+
+summary(fit_OSA)
+```
+
+```{r}
+nominal_test(fit_OSA)
+scale_test(fit_OSA)
+```
+
+OSA OK.   
+
+```{r}
+uni_OSA <- tidy(fit_OSA, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2)  %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+  cols_label(conf.low = "95%CI")
+
+uni_OSA
+```
+
+
+
+```{r, include=FALSE}
+rm(uni_age,uni_BMI,uni_OSA,uni_sex,fit_age,fit_BMI,fit_BMInom,fit_OSA,fit_sex,fit_BMI2,fit_BMInom2,fit_age2)
+```
+
+This modelling approach with collapsed factors is way more stable. Thus, will proceed with this modelling approach.   
+
+## Multivariable model   
+
+```{r, warning=TRUE}
+fit_multi <- clm(atelectasis_percent ~ type_obesity + age + sex + sleep_apnea,
+                 data = data_prop, 
+                 link = "loglog", threshold = "flexible")
+
+summary(fit_multi)
+```
+
+Convergence: 
+```{r}
+convergence(fit_multi)
+```
+
+
+Check proportional odds assumption:   
+```{r, warning=TRUE}
+nominal_test(fit_multi)
+```
+
+Proportional odds OK for all variables except obesity type (as already expected) and age, but proportional odds assumption is not as relevant for covariates.  
+
+Check for scale effects:    
+```{r}
+scale_test(fit_multi)
+```
+
+No scale effects, good news.   
+
+Summarize results in table:   
+```{r}
+tidy(fit_multi, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+  cols_label(conf.low = "95%CI")
+```
+
+
+```{r, include=FALSE}
+rm(fit_multi)
+```
+
+
+
+# Partial proportional odds model:   
+
+As mentioned before, a partial proportional odds model could be useful in understanding patterns leading to not meeting proportional odds assumption. Thus, I will fit a partial proportional odds model.   
+
+The **loglog** function remains the better function to fit a model with nominal component for type_obesity.   
+```{r}
+data_prop %>%
+  nest(data = everything()) %>%
+ crossing(
+    link = c("logit", "probit", "cloglog", "loglog", "cauchit"),
+    threshold = c("flexible", "equidistant")
+  ) %>%
+  mutate(
+    mod = map2(
+      data, link,
+      ~clm(atelectasis_percent ~ sex + age + sleep_apnea, nominal = ~ type_obesity,
+        data = .x, link = .y
+      )
+    )
+  ) %>%
+  mutate(
+    mod_summary = map(
+      mod,
+      ~glance(.x) %>% mutate(logLik = as.numeric(logLik))
+    )
+  ) %>%
+  unnest(mod_summary) %>%
+  dplyr::select(link, threshold, logLik, edf, AIC, BIC) %>%
+  arrange(logLik) %>%
+  gt()
+```
+
+## Univariable model     
+```{r}
+fit_BMIpartuni <- vglm(atelectasis_percent ~ type_obesity, 
+                       data=data_prop, link="loglog",
+                       family=cumulative(parallel=FALSE~type_obesity, reverse = TRUE)
+                       )
+
+summary(fit_BMIpartuni)
+```
+
+```{r}
+confint_BMIpartuni <- round(exp(confintvglm(fit_BMIpartuni,method = "wald")),2)
+confint_BMIpartuni
+```
+
+## Multivariable model  
+Fit a model that allows proportional odds for all explanatory variables, except type obesity:    
+```{r}
+fit_BMIpart <- vglm(atelectasis_percent ~ type_obesity+sleep_apnea+sex+age, 
+                    data=data_prop, 
+                    link="loglog", 
+                    family=cumulative(parallel=FALSE~type_obesity, reverse = TRUE)
+                    )
+
+summary(fit_BMIpart)
+```
+
+
+```{r}
+AIC(fit_BMIpart)
+```
+
+```{r}
+confint_BMIpart <- round(exp(confintvglm(fit_BMIpart,method = "wald")),2)
+confint_BMIpart
+```
+
+```{r, include=FALSE}
+rm(fit_BMIpart,confint_BMIpart,fit_BMIpartuni,confint_BMIpart)
+```
+
+
+
+# Model SpO2   
+
+The SpO2 variable does not have a normal distribution. Furthermore, the distance between 1% increases in SpO2 cannot be considered equidistant increases since values are determined from the S-shaped curve of hemoglobin saturation. This is the reason why the distribution of SpO2 is negatively skewed, with upper values reaching the saturation point of the hemoglobin curve. 
+
+Therefore, modelling SpO2 as a linear term could be potentially misleading. Nonetheless, a model assuming a gaussian distribution for SpO2 may potentially be easier to understand and communicate. 
+
+Thus, I will first model SpO2 assuming a gaussian distribution and I will then apply a fractional regression model which is more appropriate for the distribution of this variable. If assuming a gaussian distribution does not change the conclusions with respect to the more appropriate fractional model, then I will report the earlier. If results are discordant, then I will report the fractional model, instead.    
+
+
+
+## Model assuming gaussian distribution      
+
+Create variable with atelectasis percent as numeric to be able to model with smooth term:   
+```{r}
+datamodel <- datamodel %>% 
+  mutate(atelectasis_smooth = as.numeric(atelectasis_percent))
+```
+
+
+First, I will fit an empty model    
+```{r}
+model <- gam(spo2_VPO ~ 1, 
+           data=datamodel
+           )
+AIC_empty <- AIC(model)
+R2_empty <- summary(model)$r.sq
+dev_empty <- summary(model)$dev.expl
+
+summary(model)
+```
+
+Fit again GAM with only smooth BMI term (the one used for Figure 1a):   
+```{r}
+model_BMI <- gam(spo2_VPO ~ s(BMI,k=5), 
+                 data=datamodel
+                 )
+
+AIC_BMI <- AIC(model_BMI)
+R2_BMI <- summary(model_BMI)$r.sq
+dev_BMI <- summary(model_BMI)$dev.expl
+
+summary(model_BMI)
+plot(model_BMI)
+```
+
+```{r}
+gam.check(model_BMI)
+```
+
+Fit a model that only contains OSA:   
+```{r}
+model_OSA_only <- gam(spo2_VPO ~ sleep_apnea, 
+                    data=datamodel
+                    )
+
+AIC_OSA_only <- AIC(model_OSA_only)
+R2_OSA_only <- summary(model_OSA_only)$r.sq
+dev_OSA_only <- summary(model_OSA_only)$dev.expl
+
+summary(model_OSA_only)
+```
+
+```{r}
+gam.check(model_OSA_only)
+```
+
+
+Fit a model that only contains atelectasis percent as smooth term:    
+```{r}
+model_atel_smooth <- gam(spo2_VPO ~ s(atelectasis_smooth,k=4),
+                       data=datamodel
+                       )
+
+AIC_atel_smooth <- AIC(model_atel_smooth)
+R2_atel_smooth <- summary(model_atel_smooth)$r.sq
+dev_atel_smooth <- summary(model_atel_smooth)$dev.expl
+
+summary(model_atel_smooth)
+```
+
+```{r}
+gam.check(model_atel_smooth)
+```
+
+Compare against atelectasis_percent as categorical. Will not model as ordinal as coefficients are more difficult to interpret than nominal terms. Whether this variable is entered as nominal or ordinal does not change the results of models. This can be checked by converting atelectasis percent to ordered and back to unordered, which I did as corroboration.     
+
+```{r}
+datamodel <- datamodel %>% mutate(
+  atelectasis_percent = factor(atelectasis_percent, ordered = FALSE)
+  )
+```
+
+   
+```{r}
+model_atel_only <- gam(spo2_VPO ~ atelectasis_percent, 
+                     data=datamodel
+                     )
+
+AIC_atel_only <- AIC(model_atel_only)
+R2_atel_only <- summary(model_atel_only)$r.sq
+dev_atel_only <- summary(model_atel_only)$dev.expl
+
+summary(model_atel_only)
+```
+
+```{r}
+gam.check(model_atel_only)
+```
+
+Modelling with smooth term offers improvement in aR2 and drop in AIC. Nonetheless, since this a non-linear relationship between BMI and the outcome is being studied, the explained deviance is more informative. Since categorical atelectasis percent explains greater deviance, I will continue using it as categorical for the subsequent models.        
+
+Fit model sBMI plus atelectasis percentage:      
+```{r}
+model_atel <- gam(spo2_VPO ~ s(BMI,k=5) + s(atelectasis_smooth,k=5), 
+                data=datamodel
+                )
+
+AIC_atel <- AIC(model_atel)
+R2_atel <- summary(model_atel)$r.sq
+dev_atel <- summary(model_atel)$dev.expl
+
+summary(model_atel)
+plot(model_atel, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_atel)
+```
+
+Model sleep apnea plus sBMI:    
+```{r}
+model_OSA <- gam(spo2_VPO ~ s(BMI,k=5) + sleep_apnea,
+                 data=datamodel
+                 )
+
+AIC_OSA <- AIC(model_OSA)
+R2_OSA <- summary(model_OSA)$r.sq
+dev_OSA <- summary(model_OSA)$dev.expl
+
+summary(model_OSA)
+plot(model_OSA, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_OSA)
+```
+
+Model sBMI + sleep apnea + atelectasis percent:      
+```{r}
+model_OSA_atel <- gam(spo2_VPO ~ s(BMI,k=5) +
+                        sleep_apnea + s(atelectasis_smooth,k=5),
+                      data=datamodel
+                      )
+
+AIC_OSA_atel <- AIC(model_OSA_atel)
+R2_OSA_atel <- summary(model_OSA_atel)$r.sq
+dev_OSA_atel <- summary(model_OSA_atel)$dev.expl
+
+summary(model_OSA_atel)
+plot(model_OSA_atel, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_OSA_atel)
+```
+
+Fit model adjusted for confounders:   
+```{r}
+model_adj <- gam(spo2_VPO ~ s(BMI,k=5) +
+                   sex + age + sleep_apnea + hb + altitude_cat,
+                 data=datamodel, na.action=na.omit
+                 )
+
+
+AIC_adj <- AIC(model_adj)
+R2_adj <- summary(model_adj)$r.sq
+dev_adj <- summary(model_adj)$dev.expl
+
+summary(model_adj)
+plot(model_adj, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_adj)
+```
+
+Fit adjusted model plus atelectasis percentage:       
+```{r}
+model_plus <- gam(spo2_VPO ~ s(BMI,k=5) +
+                    sex + age + sleep_apnea + hb + altitude_cat +
+                    atelectasis_percent,
+                  data=datamodel, na.action=na.omit
+                  )
+
+AIC_plus <- AIC(model_plus)
+R2_plus <- summary(model_plus)$r.sq
+dev_plus <- summary(model_plus)$dev.expl
+
+summary(model_plus)
+plot(model_plus, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_plus)
+```
+
+
+
+Build a dataframe to compare models:  
+```{r}
+models <- data.frame(Model = c("empty",
+                               "sBMI",
+                               "OSA_only",
+                               "atel_only",
+                               "s(atel)",
+                               "sBMI_atel",
+                               "sBMI_OSA",
+                               "sBMI_atel_OSA",
+                               "adjusted",
+                               "adjusted_plus_atel"),
+                     AIC = c(AIC_empty,
+                             AIC_BMI,
+                             AIC_OSA_only,
+                             AIC_atel_only,
+                             AIC_atel_smooth,
+                             AIC_atel,
+                             AIC_OSA,
+                             AIC_OSA_atel,
+                             AIC_adj,
+                             AIC_plus),
+                     aR2 = c(R2_empty,
+                             R2_BMI,
+                             R2_OSA_only,
+                             R2_atel_only,
+                             R2_atel_smooth,
+                             R2_atel,
+                             R2_OSA,
+                             R2_OSA_atel,
+                             R2_adj,
+                             R2_plus),
+                     dev = c(dev_empty,
+                             dev_BMI,
+                             dev_OSA_only,
+                             dev_atel_only,
+                             dev_atel_smooth,
+                             dev_atel,
+                             dev_OSA,
+                             dev_OSA_atel,
+                             dev_adj,
+                             dev_plus)
+                     )
+```
+
+Sort by AIC
+```{r}
+models %>% arrange(AIC)
+```
+
+Sort by deviance   
+```{r}
+models <- models %>% mutate(aR2 = round(aR2,3)*100,
+                            dev = round(dev,3)*100
+                            )
+models %>% arrange(desc(dev))
+```
+
+Sort by adjusted R2
+```{r}
+models %>% arrange(desc(aR2))
+```
+
+Some conclusions from model assuming normal distribution for SpO2:   
+- Most of the effect of BMI was atenuated when including atelectasis percent. Nonetheless, a smooth term for BMI was still statistically significant in adjusted models.  Will check if these conclusions hold in the more appropriate fractional model.    
+- There were problems with heteroskedasticity using Gaussian function, with greater error higher SpO2 values. Notably, error term at lower SpO2 values was low, meaning that the terms included in the model very likely explain most of the variability at low SpO2 values. This could make sense, as it is unlikely that normal SpO2 values will be explained by these factors. Thus, it may be a case of true heteroskedasticity. Will again check in fractional model.    
+
+```{r, include = FALSE}
+rm(list=setdiff(ls(pattern = "^AIC"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^dev"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^model"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^R2"), lsf.str()))
+```
+
+
+## Fractional regression function    
+
+Convert SpO2 to fractional values between 0 and 1 to model.   
+```{r}
+datamodel <- datamodel %>% mutate(spo2_fraction = spo2_VPO/100)
+```
+
+#### Empty model   
+First, I will fit an empty model    
+```{r}
+model<-gam(spo2_fraction~1,
+           data=datamodel, 
+           family = quasibinomial(link = logit)
+           )
+
+R2_empty <- summary(model)$r.sq
+dev_empty <- summary(model)$dev.expl
+
+summary(model)
+```
+#### Smooth BMI   
+Fit again GAM with only smooth BMI term (the one used for Figure 1a):   
+```{r}
+model_BMI <- gam(spo2_fraction~s(BMI,k=5), 
+                 data=datamodel, 
+                 family = quasibinomial(link = logit)
+                 )
+
+R2_BMI <- summary(model_BMI)$r.sq
+dev_BMI <- summary(model_BMI)$dev.expl
+
+summary(model_BMI)
+plot(model_BMI)
+```
+
+```{r}
+gam.check(model_BMI)
+```
+
+#### OSA only
+Fit a model that only contains OSA:   
+```{r}
+model_OSA_only<-gam(spo2_fraction~sleep_apnea,
+                    data=datamodel,
+                    family = quasibinomial(link = logit)
+                    )
+
+R2_OSA_only <- summary(model_OSA_only)$r.sq
+dev_OSA_only <- summary(model_OSA_only)$dev.expl
+
+summary(model_OSA_only)
+```
+
+```{r}
+gam.check(model_OSA_only)
+```
+
+#### Atelectasis percent   
+Fit a model that only contains atelectasis percent:    
+```{r}
+model_atel_only<-gam(spo2_fraction ~ atelectasis_percent,
+                     data=datamodel, 
+                     family = quasibinomial(link = logit)
+                     )
+
+R2_atel_only <- summary(model_atel_only)$r.sq
+dev_atel_only <- summary(model_atel_only)$dev.expl
+
+summary(model_atel_only)
+```
+
+```{r}
+gam.check(model_atel_only)
+```
+
+#### s(BMI) + atelectasis percentage    
+Fit model sBMI plus atelectasis percentage:      
+```{r}
+model_atel<-gam(spo2_fraction ~ s(BMI,k=5) + atelectasis_percent,
+                data=datamodel, 
+                family = quasibinomial(link = logit)
+                )
+
+R2_atel <- summary(model_atel)$r.sq
+dev_atel <- summary(model_atel)$dev.expl
+
+summary(model_atel)
+plot(model_atel, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_atel)
+```
+
+### OSA + BMI    
+Model sleep apnea plus sBMI:    
+```{r}
+model_OSA <- gam(spo2_fraction ~ s(BMI,k=5) + sleep_apnea, 
+               data=datamodel, 
+               family = quasibinomial(link = logit)
+               )
+
+R2_OSA <- summary(model_OSA)$r.sq
+dev_OSA <- summary(model_OSA)$dev.expl
+
+summary(model_OSA)
+plot(model_OSA, all.terms=TRUE)
+```
+
+### sBMI + OSA + atelectasis percent 
+Model sBMI + sleep apnea + atelectasis percent:      
+```{r}
+model_OSA_atel <-gam(spo2_fraction ~ s(BMI,k=5) + sleep_apnea + 
+                       atelectasis_percent,
+                     data=datamodel, 
+                     family = quasibinomial(link = logit)
+                     )
+
+R2_OSA_atel <- summary(model_OSA_atel)$r.sq
+dev_OSA_atel <- summary(model_OSA_atel)$dev.expl
+
+summary(model_OSA_atel)
+plot(model_OSA_atel, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_OSA_atel)
+```
+
+### Adjusted model    
+Fit model adjusted for confounders:   
+```{r}
+model_adj<-gam(spo2_fraction~s(BMI,k=5)+sex+age+sleep_apnea+hb+altitude_cat,
+               data=datamodel, 
+               na.action=na.omit, 
+               family = quasibinomial(link = logit)
+               )
+
+R2_adj <- summary(model_adj)$r.sq
+dev_adj <- summary(model_adj)$dev.expl
+
+summary(model_adj)
+plot(model_adj, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_adj)
+```
+
+### Adjusted + Atelectasis percent
+Fit adjusted model plus atelectasis percentage:       
+```{r}
+model_plus<-gam(spo2_fraction ~ s(BMI,k=5) +
+                  sex + age + sleep_apnea + hb + altitude_cat +
+                  atelectasis_percent,
+                data=datamodel, 
+                na.action=na.omit, 
+                family = quasibinomial(link = logit)
+                )
+
+R2_plus <- summary(model_plus)$r.sq
+dev_plus <- summary(model_plus)$dev.expl
+
+summary(model_plus)
+plot(model_plus, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_plus)
+```
+
+
+Build a dataframe to compare models:  
+```{r}
+models <- data.frame(Model = c("empty",
+                               "sBMI",
+                               "OSA_only",
+                               "atel_only",
+                               "sBMI_atel",
+                               "sBMI_OSA",
+                               "sBMI_atel_OSA",
+                               "adjusted",
+                               "adjusted_plus_atel"),
+                     aR2 = c(R2_empty,
+                             R2_BMI,
+                             R2_OSA_only,
+                             R2_atel_only,
+                             R2_atel,
+                             R2_OSA,
+                             R2_OSA_atel,
+                             R2_adj,
+                             R2_plus),
+                     dev = c(dev_empty,
+                             dev_BMI,
+                             dev_OSA_only,
+                             dev_atel_only,
+                             dev_atel,
+                             dev_OSA,
+                             dev_OSA_atel,
+                             dev_adj,
+                             dev_plus)
+           )
+```
+
+Sort by deviance   
+```{r}
+models <- models %>% mutate(aR2 = round(aR2,3)*100,
+                            dev = round(dev,3)*100
+                            )
+models %>% arrange(desc(dev))
+```
+
+Sort by R2
+```{r}
+models %>% arrange(desc(aR2))
+```
+
+### Table S3
+Create table for models:    
+```{r}
+tab_BMI_only <- tbl_regression(model_BMI, 
+                               exponentiate = TRUE, 
+                               tidy_fun = gtsummary::tidy_gam)
+
+tab_OSA_only <- tbl_regression(model_OSA_only, 
+                               exponentiate = TRUE, 
+                               tidy_fun = gtsummary::tidy_gam)
+
+tab_atel_only <- tbl_regression(model_atel_only,
+                                exponentiate = TRUE,
+                                tidy_fun = gtsummary::tidy_gam) 
+
+tab_OSA <- tbl_regression(model_OSA,
+                          exponentiate = TRUE, 
+                          tidy_fun = gtsummary::tidy_gam) 
+
+tab_atel <- tbl_regression(model_atel, 
+                           exponentiate = TRUE,
+                           tidy_fun = gtsummary::tidy_gam)
+
+tab_OSA_atel <- tbl_regression(model_OSA_atel,
+                               exponentiate = TRUE, 
+                               tidy_fun = gtsummary::tidy_gam)
+
+tab_adj <- tbl_regression(model_adj, 
+                          exponentiate = TRUE,
+                          tidy_fun = gtsummary::tidy_gam)
+
+tab_plus <- tbl_regression(model_plus,
+                           exponentiate = TRUE, 
+                           tidy_fun = gtsummary::tidy_gam)
+
+tableS3 <- tbl_stack(
+  list(tab_BMI_only,tab_OSA_only,tab_atel_only,tab_OSA,tab_atel,tab_OSA_atel,tab_adj,tab_plus),
+  group_header = c("BMI only", "OSA only", "Atelectasis percent only", "BMI + OSA", "BMI + Atelectasis percent", "BMI + OSA + Atelectasis percent", "BMI + OSA + age + sex + hb + altitude","Fully adjusted model")
+  ) 
+
+tableS3
+```
+
+Save Table S3     
+```{r}
+tableS3 %>%
+  as_gt() %>%
+  gt::gtsave(filename = "TableS3.docx", path = tabfolder)
+```
+
+
+### Figure SpO2:   
+
+#### Figure 3a: sBMI  
+
+Check residuals:   
+```{r}
+draw(model_BMI,residuals=TRUE) 
+```
+
+
+Now, plot take the inverse logit function to assess partial effect on mean SpO2.   
+```{r}
+draw(model_BMI, 
+     constant = coef(model_BMI)[1], 
+     fun = inv_link(model_BMI)
+     ) 
+```
+
+Draw a personalized plot:  
+```{r}
+plot3a <- draw(model_BMI, 
+     constant = coef(model_BMI)[1], 
+     fun = inv_link(model_BMI), 
+     smooth_col = "cadetblue4"
+     ) +
+  scale_y_continuous(labels = scales::percent, limits=c(0.80,1)) +
+  labs(x="Body mass index (kg/m²)", 
+       y = "Partial effect (mean SpO2)", 
+       title = "s(BMI)", 
+       subtitle=paste0("Deviance explained:"," ",(round(dev_BMI,3)*100),"%"),
+       tag="A",
+       caption=NULL) + 
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+
+plot3a 
+```
+
+
+#### Figure 3b: sBMI_OSA  
+
+Check residuals:   
+```{r}
+draw(model_OSA,residuals=TRUE) 
+```
+
+Partial effect on mean SpO2:  
+```{r}
+plot3b <- draw(model_OSA, 
+     constant = coef(model_OSA)[1], 
+     fun = inv_link(model_OSA), 
+     smooth_col = "cadetblue4"
+     ) +
+  scale_y_continuous(labels = scales::percent, limits=c(0.80,1)) +
+  labs(x="Body mass index (kg/m²)", 
+       y = "Partial effect (mean SpO2)", 
+       title = "s(BMI) + OSA", 
+       subtitle=paste0("Deviance explained:"," ",(round(dev_OSA,3)*100),"%"),
+       tag="B",
+       caption=NULL) + 
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+
+plot3b 
+```
+
+
+#### Figure 3c: sBMI_atel  
+
+Check residuals:   
+```{r}
+draw(model_atel,residuals=TRUE) 
+```
+
+Partial effect on mean SpO2:  
+```{r}
+plot3c <- draw(model_atel, 
+     constant = coef(model_atel)[1], 
+     fun = inv_link(model_atel), 
+     smooth_col = "cadetblue4"
+     ) +
+  scale_y_continuous(labels = scales::percent, limits=c(0.80,1)) +
+  labs(x="Body mass index (kg/m²)", 
+       y = "Partial effect (mean SpO2)", 
+       title = "s(BMI) + atelectasis percent", 
+       subtitle=paste0("Deviance explained:"," ",(round(dev_atel,3)*100),"%"),
+       tag="C",
+       caption=NULL) + 
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+
+plot3c 
+```
+
+#### Figure 3d: fully adjusted 
+
+Check residuals:   
+```{r}
+draw(model_plus,residuals=TRUE) 
+```
+
+Partial effect on mean SpO2:  
+```{r}
+plot3d <- draw(model_plus, 
+     constant = coef(model_plus)[1], 
+     fun = inv_link(model_plus), 
+     smooth_col = "cadetblue4"
+     ) +
+  scale_y_continuous(labels = scales::percent, limits=c(0.80,1)) +
+  labs(x="Body mass index (kg/m²)", 
+       y = "Partial effect (mean SpO2)", 
+       title = "Fully adjusted model", 
+       subtitle=paste0("Deviance explained:"," ",(round(dev_plus,3)*100),"%"),
+       tag="D",
+       caption=NULL) + 
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x = element_text(size=rel(1.2)), 
+        axis.text.y = element_text(size=rel(1.2))
+        )
+
+plot3d 
+```
+
+#### Figure 3   
+```{r}
+figure3 <- grid.arrange(plot3a, plot3b, plot3c, plot3d)
+```
+
+Save figure:   
+```{r}
+ggsave("Figure3.png",plot=figure3,path=figfolder, width = 10,  height = 7, units = "in", dpi = 300)
+```
+
+
+```{r, include = FALSE}
+rm(sm,dataOSA,dataBMIs,dataATEL,dataPLUS,figure3,tableS3)
+rm(list=setdiff(ls(pattern = "^plot3"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^dev"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^model"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^R2"), lsf.str()))
+rm(list=setdiff(ls(pattern = "^tab_"), lsf.str()))
+```
+
+# Post-hoc analyses  
+
+In figure 2, it can be observed that SpO2 starts decreasing at BMIs above 40. Thus, by having used the WHO obesity class categories, detail on differences above BMI 40 for the extent of atelectasis percentage may have been lost. The WHO obesity class categories do not reflect the extent of variation in BMI observed in this sample of patients:   
+- Class 1, BMI [30,35): ~1/4 participants   
+- Class 2, BMI [35,40): ~1/4 participants   
+- Class 3, BMI >40: ~1/2 of participants, with a median BMI above a 5 units range: `r data %>% filter(type_obesity=="Class 3 Obesity") %>% summarize(BMI=median(BMI))`.  
+
+Thus, creating subcategories within the class 3 obesity may allow to assess the impact of BMI increases above 40 on atelectasis percentage with more detail.   
+
+Create new variable with the following categories:  
+- BMI [30,35)      
+- BMI [35,40)    
+- BMI [40,45)    
+- BMI [44,50)    
+- BMI >50    
+
+```{r}
+data_prop <- data_prop %>% 
+  mutate(BMI_breaks = cut(BMI,
+                            breaks=c(30,35,40,45,50,80),
+                            right=FALSE,
+                            labels=c("[30,35)","[35,40)","[40,45)","[45,50)","≥50")
+                            )
+         )
+```
+
+
+```{r}
+attach(data_prop)
+tab <- table(BMI_breaks)
+tab
+prop <- round(prop.table(tab)*100,1)
+prop
+```
+
+## Atelectasis - obesity breaks       
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data_prop %>% summarize(mean_expected_freq = n()/(nlevels(BMI_breaks)*nlevels(atelectasis)))
+mean_exp
+```
+
+```{r}
+freq <- table(BMI_breaks, atelectasis)
+freq
+round(prop.table(freq),4)
+```
+
+Mosaic Plot  
+```{r, fig.height=4, fig.width=6}
+data_prop %>% mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(aes(x = product(atelectasis,BMI_breaks), fill=atelectasis),na.rm = TRUE) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+```{r, include=FALSE}
+rm(mean_exp,freq, chi)
+```
+
+
+#### Atelectasis location by obesity class   
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data_prop %>% drop_na(BMI_breaks, atelectasis_location) %>% summarize(mean_expected_freq = n()/(nlevels(BMI_breaks)*nlevels(atelectasis_location)))
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.  
+
+```{r}
+freq <- table(BMI_breaks, atelectasis_location)
+freq
+round(prop.table(freq),4)
+```
+
+Mosaic Plot  
+```{r, fig.height=3, fig.width=5}
+ggplot(data_prop = data_prop) +
+  geom_mosaic(aes(x = product(BMI_breaks,atelectasis_location), fill=BMI_breaks),na.rm = TRUE) +
+  scale_fill_manual(values=c("seagreen1","seagreen2","seagreen3","seagreen4","seagreen")) +
+  theme_mosaic() 
+```
+
+
+```{r}
+chi <- chisq.test(freq, correct=FALSE)
+chi
+```
+
+
+```{r}
+#Patients who had atelectasis (Yes/No)
+atelectasis_total <- data_prop %>% group_by(atelectasis) %>% 
+  summarise(n = n()) %>%  
+  mutate(prev = n / sum(n)*100, 
+         lower = lapply(n, prop.test, n = sum(n)), 
+         upper = sapply(lower, function(x) x$conf.int[2])*100, 
+         lower = sapply(lower, function(x) x$conf.int[1])*100,
+         BMI_breaks = "Total") %>% 
+  mutate_at(3:5, round, 2)
+atelectasis_total$confint <- paste(atelectasis_total$lower, "-", atelectasis_total$upper)
+atelectasis_total <- atelectasis_total %>% dplyr::select(-c(lower,upper))
+
+atelectasis_obesity <- data_prop %>% group_by(BMI_breaks, atelectasis) %>% 
+  summarise(n = n()) %>%  
+  mutate(prev = n / sum(n)*100, 
+         lower = lapply(n, prop.test, n = sum(n)), 
+         upper = sapply(lower, function(x) x$conf.int[2])*100, 
+         lower = sapply(lower, function(x) x$conf.int[1])*100) %>% 
+  mutate_at(4:6, round, 2)
+atelectasis_obesity$confint <- paste(atelectasis_obesity$lower, "-", atelectasis_obesity$upper)
+atelectasis_obesity <- atelectasis_obesity %>% dplyr::select(-c(lower,upper))
+
+
+atelectasis <- atelectasis_total %>% bind_rows(atelectasis_obesity) %>% relocate(BMI_breaks, .before = n)
+
+
+#Location of atelectasis (Unilateral/Bilateral)
+atelectasis_total_location <- data_prop %>% filter(atelectasis=="Yes") %>% group_by(atelectasis_location) %>% summarise(Freq = n()) %>%  mutate(Percentage = (round((Freq/sum(Freq)*100),digits=2)), BMI_breaks = "Total")
+atelectasis_total_location$sumpercent <- paste(atelectasis_total_location$Freq," (", atelectasis_total_location$Percentage, "%)")
+atelectasis_total_location <- atelectasis_total_location %>% dplyr::select(-c(Freq,Percentage)) %>% pivot_wider(names_from = atelectasis_location,values_from = sumpercent)
+                                                                                                                         
+atelectasis_obesity_location <- data_prop %>% filter(atelectasis=="Yes") %>% group_by(BMI_breaks, atelectasis_location) %>% summarise(Freq = n()) %>%  mutate(Percentage = (round((Freq/sum(Freq)*100),digits=2)))
+atelectasis_obesity_location$sumpercent <- paste(atelectasis_obesity_location$Freq," (", atelectasis_obesity_location$Percentage, "%)")
+atelectasis_obesity_location <- atelectasis_obesity_location %>% dplyr::select(-c(Freq,Percentage)) %>% pivot_wider(names_from = atelectasis_location,values_from = sumpercent)
+
+location <- atelectasis_total_location %>% bind_rows(atelectasis_obesity_location)
+
+atelectasis <- atelectasis %>% right_join(location,by="BMI_breaks") %>% mutate(confint=replace(confint, atelectasis=="No", NA), Unilateral=replace(Unilateral, atelectasis=="No", NA), Bilateral=replace(Bilateral, atelectasis=="No", NA))
+atelectasis
+
+```
+
+
+```{r, include=FALSE}
+rm(mean_exp, freq, chi, location, atelectasis_obesity, atelectasis_total, atelectasis_total_location, atelectasis_obesity_location, atelectasis)
+```
+
+
+
+#### Atelectasis Percent 
+
+##### Mean atelectasis percentage  
+
+Mean atelectasis percentage coverage by BMI breaks:   
+
+If ignoring zero-inflation and skewness:    
+```{r}
+data %>% mutate(BMI_breaks = cut(BMI,breaks=c(30,35,40,45,50,80),right=FALSE,
+                                     labels=c("[30,35)","[35,40)","[40,45)","[45,50)","≥50")),
+                    atelectasis_percent=as.numeric(atelectasis_percent)) %>% 
+  group_by(BMI_breaks) %>%
+  summarize(
+    mean = mean(atelectasis_percent),
+    sd = sd(atelectasis_percent)
+  ) 
+```
+
+As is evident from these numbers, assuming normality causes standard deviation to capture negative values, which is impossible in reality for this variable.   
+
+Thus, bootstrapping mean and 95%CI is expected to lead to more appropriate estimates:   
+```{r}
+data_class_1 <- data %>% 
+  mutate(BMI_breaks = cut(BMI,breaks=c(30,35,40,45,50,80),right=FALSE,
+                                     labels=c("[30,35)","[35,40)","[40,45)","[45,50)","≥50")),
+         atelectasis_percent=as.numeric(atelectasis_percent)) %>% 
+  group_by(BMI_breaks) %>%
+  filter(BMI_breaks=="[40,45)") 
+
+
+data_class_2 <- data %>% 
+  mutate(BMI_breaks = cut(BMI,breaks=c(30,35,40,45,50,80),right=FALSE,
+                                     labels=c("[30,35)","[35,40)","[40,45)","[45,50)","≥50")),
+         atelectasis_percent=as.numeric(atelectasis_percent)) %>% 
+  group_by(BMI_breaks) %>% 
+  filter(BMI_breaks=="[45,50)") 
+
+
+data_class_3 <- data %>% 
+  mutate(BMI_breaks = cut(BMI,breaks=c(30,35,40,45,50,80),right=FALSE,
+                                     labels=c("[30,35)","[35,40)","[40,45)","[45,50)","≥50")),
+         atelectasis_percent=as.numeric(atelectasis_percent)) %>% 
+  group_by(BMI_breaks) %>% 
+  filter(BMI_breaks=="≥50") 
+```
+
+BMI [40,45)    
+```{r}
+boot_class1 <- one.boot(data_class_1$atelectasis_percent, mean, R=10000)
+mean_boot_class1 <- mean(boot_class1$t)
+mean_boot_class1
+boot_ci_class1 <- boot.ci(boot_class1)
+boot_ci_class1
+```
+
+BMI [44,50)    
+```{r}
+boot_class2 <- one.boot(data_class_2$atelectasis_percent, mean, R=10000)
+mean_boot_class2 <- mean(boot_class2$t)
+mean_boot_class2
+boot_ci_class2 <- boot.ci(boot_class2)
+boot_ci_class2
+```
+
+- BMI >50  
+```{r}
+boot_class3 <- one.boot(data_class_3$atelectasis_percent, mean, R=10000)
+mean_boot_class3 <- mean(boot_class3$t)
+mean_boot_class3
+boot_ci_class3 <- boot.ci(boot_class3)
+boot_ci_class3
+```
+
+> The mean atelectasis percentage according to class 3 subgroups was: BMI [40,45)  (`r round(mean_boot_class1,2)`%, 95%CI:`r round(boot_ci_class1$bca[1,4],2)`-`r round(boot_ci_class1$bca[1,5],2)`), BMI [44,50) (`r round(mean_boot_class2,2)`%, 95%CI:`r round(boot_ci_class2$bca[1,4],2)`-`r round(boot_ci_class2$bca[1,5],2)`), and BMI >50 (`r round(mean_boot_class3,2)`%, 95%CI:`r round(boot_ci_class3$bca[1,4],2)`-`r round(boot_ci_class3$bca[1,5],2)`).
+
+```{r, include=FALSE}
+rm(boot_atel,mean_boot,boot_ci,data_class_1,data_class_2,data_class_3,boot_class1,mean_boot_class1,boot_ci_class1,boot_class2,mean_boot_class2,boot_ci_class2,boot_class3,mean_boot_class3,boot_ci_class3)
+```
+
+
+Mean expected frequency:  
+```{r}
+mean_exp <- data_prop %>% mutate(atelectasis_percent=factor(atelectasis_percent)) %>% summarize(mean_expected_freq = n()/(nlevels(BMI_breaks)*nlevels(atelectasis_percent)))
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.  
+
+```{r}
+tab <- table(atelectasis_percent,type_obesity)
+tab
+prop.table(tab)
+prop_fig2a <- prop.table(tab,margin=2)
+prop_fig2a
+```
+
+```{r}
+tab <- table(atelectasis_percent,BMI_breaks)
+tab
+prop.table(tab)
+prop_fig2b <- prop.table(tab,margin=2)
+prop_fig2b
+```
+
+```{r}
+barplot(tab,beside=TRUE)
+```
+
+```{r}
+chi <- chisq.test(tab, correct=FALSE)
+chi
+```
+
+
+> The relative frequencies of atelectasis percentage according to BMI breaks were significantly different (**Figure 2b**, p<0.001).   
+
+##### Figure 2b  
+```{r}
+barplot(prop_fig2b,beside=TRUE,ylim=c(0,1),xlim=c(0,34),ylab="Relative frequency",xlab="Body mass index (kg/m²)",
+        col=brewer.pal(4,"Blues"),
+        legend.text=c("0-5%","5-10%","10-15%","≥15%"),
+        space = c(0.2, 1.5)
+        )
+Figure2b <- recordPlot()
+```    
+
+```{r, results='hide'}
+png(filename=paste(figfolder,"/Figure2b.png",sep=""),width=8, height=5, units="in", res=300)
+Figure2b
+dev.off
+```
+
+
+I only want to show frequencies for the subcategories of class 3 obesity.  
+```{r}
+prop_fig2b <- prop_fig2b[1:4,3:5]
+```
+
+Rebuild plots and stack them: 
+```{r}
+layout(matrix(c(1,2), ncol=2), widths=c(5,5))
+par(mgp=c(0,2,0))  
+barplot(prop_fig2a,beside=TRUE,ylim=c(0,1),yaxt='n',
+        main="A",adj=0,
+        names.arg=expression(atop("[30,35)","Class 1"),atop("[35,40)","Class 2"),atop("≥40","Class 3")),
+        col=brewer.pal(4,"Blues"),
+        space = c(0.2, 1.5), 
+        cex.axis = 0.9, cex.names = 0.9
+        )
+axis(2, at=0.5, pos=0, labels="Relative frequency", las=0, tck=0, lwd=0)
+axis(2, at=c(0.0,0.2,0.4,0.6,0.8,1.0), labels=FALSE)
+axis(2, at=c(0.0,0.2,0.4,0.6,0.8,1.0), labels=c("0.0","0.2","0.4","0.6","0.8","1.0"), pos=3, tck=0, lwd=0, cex.axis=0.9)
+par(mgp=c(2,0.5,0)) 
+barplot(prop_fig2b,beside=TRUE,ylim=c(0,1),
+        main="B",adj=0,
+        xlab="         Class 3 subgroups (kg/m²)", cex.lab = 0.9,
+        col=brewer.pal(4,"Blues"),
+        legend.text=c("0-5%","5-10%","10-15%","≥15%"), args.legend = c(y=1.1,cex=0.8),
+        space = c(0.2, 1.5), 
+        cex.axis = 0.9, cex.names = 0.9
+        )
+
+Figure2 <- recordPlot() 
+```
+
+
+```{r, results='hide'}
+png(filename=paste(figfolder,"/Figure2.png",sep=""),width=8, height=5, units="in", res=300)
+Figure2
+dev.off
+```
+
+```{r, include=FALSE}
+rm(mean_exp,freq,percent,tab,chi,Figure2,Figure2b,prop_fig2a,prop_fig2b)
+```
+
+
+## Crude prevalence ratio   
+```{r}
+dataprev <- data_prop %>% mutate(atelectasis = as.numeric(as.character(fct_recode(atelectasis,"0"="No","1"="Yes"))))
+
+poisson_fit <- glm(atelectasis ~ BMI_breaks,
+data = dataprev,
+family = poisson(link = log))
+
+tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
+```
+
+Robust standard errors:  
+```{r}
+covmat <- vcovHC(poisson_fit, type = "HC0")
+covmat
+```
+
+```{r}
+#Calculate the standard error
+se <- sqrt(diag(covmat))
+
+# Bind together model output
+#  1. exponentiated coefficients
+#  2. robust standard errors
+#  3. 95% confidence intervals
+# Note that qnorm(0.975) approximately equals 1.96
+model_output <- cbind(
+  Estimate = exp(coef(poisson_fit)),
+  `Robust SE` = se,
+  Lower = exp(coef(poisson_fit) - qnorm(0.975) * se),
+  Upper = exp(coef(poisson_fit) + qnorm(0.975) * se)
+)
+
+# Coerce model_output into a data frame
+# Return second row to focus on the weekheart variable
+model_output <- as.data.frame(round(model_output,2))
+model_output
+
+
+```
+
+## Adjusted prevalence ratio   
+```{r}
+poisson_fit <- glm(atelectasis ~ BMI_breaks + age + sex + sleep_apnea,
+data = dataprev,
+family = poisson(link = log))
+
+tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
+```
+
+Robust standard errors:  
+```{r}
+covmat <- vcovHC(poisson_fit, type = "HC0")
+covmat
+```
+
+```{r}
+#Calculate the standard error
+se <- sqrt(diag(covmat))
+
+# Bind together model output
+#  1. exponentiated coefficients
+#  2. robust standard errors
+#  3. 95% confidence intervals
+# Note that qnorm(0.975) approximately equals 1.96
+model_output2 <- cbind(
+  Estimate = exp(coef(poisson_fit)),
+  `Robust SE` = se,
+  Lower = exp(coef(poisson_fit) - qnorm(0.975) * se),
+  Upper = exp(coef(poisson_fit) + qnorm(0.975) * se)
+)
+
+# Coerce model_output into a data frame
+# Return second row to focus on the weekheart variable
+model_output2 <- as.data.frame(round(model_output2,2))
+model_output2
+```
+
+### Table 2   
+```{r}
+model_output <- model_output %>% 
+  dplyr::slice(2:5) %>%
+  rename(PR = Estimate, SE = `Robust SE`) %>% 
+  mutate("95%CI" = paste(Lower,Upper,sep="-")) %>% 
+  select(-c(Lower,Upper))
+
+model_output2 <- model_output2 %>% 
+  dplyr::slice(2:5) %>%
+  rename(aPR = Estimate, aSE = `Robust SE`) %>% 
+  mutate("a95%CI" = paste(Lower,Upper,sep="-")) %>% 
+  select(-c(Lower,Upper))
+
+table2 <- dplyr::bind_cols(model_output, model_output2) %>% rownames_to_column(var = "Category") %>% mutate_at("Category", str_replace, "BMI_breaks", "")
+
+flextable(table2) %>% 
+  save_as_docx(path = paste(tabfolder,"/Table2_complement.docx",sep=""))
+
+table2
+```
+
+
+```{r, include=FALSE}
+rm(dataprev,poisson_fit,covmat,se,model_output, model_output2,table2)
+```
+
+
+
+
+## Ordinal Logistic Regression Model   
+
+Collapse atelectasis percent category as done before:    
+```{r}
+dataposthoc <- data_prop
+dataposthoc$atelectasis_percent <- fct_collapse(dataposthoc$atelectasis_percent,
+                                              "0%" = c("0%","2.5%"),
+                                              "5%" = c("5%","7.5%"),
+                                              "10%" = c("10%","12.5%"),
+                                              "15%" = c("15%","17.5%")
+                                              )
+
+table(dataposthoc$atelectasis_percent)
+```
+
+
+Rename new obesity category breaks levels to facilitate reading of results:  
+```{r}
+dataposthoc <- dataposthoc %>% 
+  mutate(BMI_breaks=fct_recode(BMI_breaks, 
+                               "1"="[30,35)", 
+                               "2"="[35,40)", 
+                               "3"="[40,45)",
+                               "4"="[45,50)",
+                               "5"="≥50"),
+         atelectasis_percent=ordered(atelectasis_percent)) 
+```
+
+Visualize pattern of atelectasis percent increase by obesity type category. 
+```{r}
+dataposthoc %>% 
+  ggplot(aes(x = BMI_breaks, fill = atelectasis_percent)) + 
+  geom_bar() +
+  scale_fill_manual(values = brewer.pal(5,"Blues")) +
+  theme_minimal()
+```
+
+
+The **loglog** link function will be used since this distribution provides the best fit for the fully adjusted ordinal model:   
+
+```{r}
+dataposthoc %>%
+  nest(data = everything()) %>%
+ crossing(
+    link = c("logit", "probit", "cloglog", "loglog", "cauchit"),
+    threshold = c("flexible", "equidistant")
+  ) %>%
+  mutate(
+    mod = map2(
+      data, link,
+      ~clm(atelectasis_percent ~ BMI_breaks + sex + age + sleep_apnea, 
+        data = .x, link = .y
+      )
+    )
+  ) %>%
+  mutate(
+    mod_summary = map(
+      mod,
+      ~glance(.x) %>% mutate(logLik = as.numeric(logLik))
+    )
+  ) %>%
+  unnest(mod_summary) %>%
+  dplyr::select(link, threshold, logLik, edf, AIC, BIC) %>%
+  arrange(logLik) %>%
+  gt()
+```
+
+
+```{r, warning=TRUE}
+fit_uni <- clm(atelectasis_percent ~ BMI_breaks, data = dataposthoc, link = "loglog", threshold = "flexible")
+
+summary(fit_uni)
+```
+
+Note that AIC (275.92) improved very much respect to initial univariable model with conventional BMI categories (391.33).
+
+```{r, warning=TRUE}
+nominal_test(fit_uni, trace=TRUE)
+```
+
+Traceback of nominal_test function showed failure to converge (error code -1), similar to what happened with first model. Will fit model with nominal term and compare through ANOVA:    
+
+```{r, warning=TRUE}
+fit_BMInom <- clm(atelectasis_percent ~ 1, nominal= ~ BMI_breaks, data = dataposthoc, link = "loglog", threshold = "flexible")
+
+summary(fit_BMInom)
+```
+
+
+```{r, warning=TRUE}
+anova(fit_uni,fit_BMInom)
+```
+
+Model with nominal term did not converge. Thus, I will only present ordinal model.       
+
+```{r}
+uni_BMI_breaks <- tidy(fit_uni, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+   cols_label(conf.low = "95%CI")
+
+uni_BMI_breaks
+```
+
+
+
+### Multivariable model   
+
+```{r, warning=TRUE}
+fit_multi <- clm(atelectasis_percent ~ BMI_breaks + age + sex + sleep_apnea, data = dataposthoc, link = "loglog", threshold = "flexible")
+
+summary(fit_multi)
+```
+
+Convergence: 
+```{r}
+convergence(fit_multi)
+```
+
+
+Check proportional odds assumption:   
+```{r, warning=TRUE}
+nominal_test(fit_multi)
+```
+
+Proportional odds OK for all variables except obesity type (as already expected) and age. Centering of age should solve this issue: 
+```{r}
+dataposthoc <- dataposthoc %>% mutate(agec = age/mean(age))
+```
+
+Re-fit model:    
+```{r, warning=TRUE}
+fit_multi2 <- clm(atelectasis_percent ~ BMI_breaks + agec + sex + sleep_apnea, data = dataposthoc, link = "loglog", threshold = "flexible")
+
+summary(fit_multi2)
+```
+
+Convergence: 
+```{r}
+convergence(fit_multi2)
+```
+
+
+Check proportional odds assumption:   
+```{r, warning=TRUE}
+nominal_test(fit_multi2)
+```
+
+Issue not solved. Will report uncentered age as proportional odds assumption is not as relevant for covariates.   
+
+Check for scale effects:    
+```{r}
+scale_test(fit_multi2)
+```
+
+No scale effects.   
+
+Summarize results of first model in table:   
+```{r}
+tidy(fit_multi, conf.int = T, conf.type = "Wald") %>%
+  transmute(
+    term, across(c(estimate, conf.low, conf.high), exp)
+  ) %>%
+  gt() %>%
+  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
+  cols_merge(c(conf.low, conf.high),
+             pattern = "{1}&mdash;{2}") %>% 
+  cols_label(conf.low = "95%CI")
+```
+
+
+```{r, include=FALSE}
+rm(fit_multi, fit_multi2, fit_uni, uni_BMI_breaks, fit_BMInom)
+```
+
+
+## Partial proportional odds model   
+
+
+The **probit** link function will be used since this distribution provides the best fit for the fully adjusted model with nominal BMI terms:   
+
+```{r}
+dataposthoc %>%
+  nest(data = everything()) %>%
+ crossing(
+    link = c("logit", "probit", "cloglog", "loglog", "cauchit"),
+    threshold = c("flexible", "equidistant")
+  ) %>%
+  mutate(
+    mod = map2(
+      data, link,
+      ~clm(atelectasis_percent ~ sex + age + sleep_apnea, nominal = ~ BMI_breaks,
+        data = .x, link = .y
+      )
+    )
+  ) %>%
+  mutate(
+    mod_summary = map(
+      mod,
+      ~glance(.x) %>% mutate(logLik = as.numeric(logLik))
+    )
+  ) %>%
+  unnest(mod_summary) %>%
+  dplyr::select(link, threshold, logLik, edf, AIC, BIC) %>%
+  arrange(logLik) %>%
+  gt()
+```
+
+
+
+#### Multivariable model  
+Fit a model that allows proportional odds for all explanatory variables, except BMI breaks:    
+```{r}
+fit_BMIpart <- vglm(atelectasis_percent ~ BMI_breaks+sleep_apnea+sex+agec, data=dataposthoc, link="probit", family=cumulative(parallel=FALSE~BMI_breaks, reverse = TRUE))
+
+summary(fit_BMIpart)
+```
+
+
+
+```{r}
+confint_BMIpart <- round(exp(confintvglm(fit_BMIpart,method = "wald")),2)
+confint_BMIpart
+```
+
+Hauck-Donner effect leading to unreliable estumates. Thus, will not report this model.   
+
+```{r, include=FALSE}
+rm(fit_BMIpart, confint_BMIpart,confint_BMIpartuni)
+```
+
