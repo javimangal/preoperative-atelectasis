@@ -47,7 +47,7 @@ pacman::p_load(
   VGAM, #Used to model partial proportional odds model.   
   gt, #Used to present a summary of the results of regression models.   
   gtsummary, #Used to create table to summarize regression models.  
-  gratia, #Used together with gglopt2 to create smooth partial effects plot from gam models. 
+  gratia #Used together with gglopt2 to create smooth partial effects plot from gam models. 
 )
 ```
 
@@ -71,18 +71,16 @@ writeLines(capture.output( print( session, locale=FALSE ) ),
 session 
 ```
 
-Set working directory and create sub-folders   
+
 ```{r, include=FALSE}
 rm(session)
-
-setwd("C:/Users/javim/preoperative_atelectasis")
 ```
 
-
+Create sub-folders   
 ```{r}
-figfolder   <- "01_output_figures"
-tabfolder   <- "01_output_tables"
-psfolder    <- "02_ps_subsets"
+figfolder   <- "results/01_output_figures"
+tabfolder   <- "results/01_output_tables"
+psfolder    <- "results/02_ps_subsets"
 dir.create( figfolder, showWarnings=FALSE )
 dir.create( tabfolder, showWarnings=FALSE )
 dir.create( psfolder, showWarnings=FALSE )
@@ -90,7 +88,9 @@ dir.create( psfolder, showWarnings=FALSE )
 
 Load dataset  
 ```{r}
-data <- read.csv("atelectasis_prevalence.csv", na.strings="NA", row.names = NULL)
+data <- read.csv("atelectasis_prevalence.csv", 
+                 na.strings="NA", 
+                 row.names = NULL)
 str(data)
 ```
 
@@ -104,7 +104,6 @@ data$sex <- factor(data$sex,
   levels = c(1, 2),
   labels = c("Woman", "Man")
 )
-
 
 table1::label(data$weight) <- "Weight"
 units(data$weight) <- "kilograms (kg)"
@@ -134,7 +133,6 @@ data$ARISCAT_group <- factor(data$ARISCAT_group,
     "High Risk"
   )
 )
-
 
 table1::label(data$ASA) <- "ASA physical status"
 data$ASA <- factor(data$ASA,
