@@ -1,10 +1,10 @@
 # Preoperative atelectasis in patients undergoing bariatric surgery. 
 
-This project structure template repository is adapted from the [Good Enough Project](https://github.com/bvreede/good-enough-project) Cookiecutter template by Barbara Vreede (2019).
-
 ## Usage
 
-This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). 
+This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The dataset has already been pre-loaded in this repository.  
+
+Since this repository is still in progress, I would suggest only focusing on the 2 Rmd documents found within the R folder, which names start with "Part_1" and "Part_2". I expect these two to be reproducible at this point. 
 
 ## Project Structure
 
