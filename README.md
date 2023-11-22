@@ -1,20 +1,14 @@
 <br/>
 <p align="center">
-  <a href="https://github.com/UtrechtUniversity/yoda">
+  <a href="https://github.com/javimangal/preoperative-atelectasis">
     <img src="PABA.jpg" alt="PABA logo" width="750" height="272">
   </a>
-
-  <p align="center">
-    Preoperative atelectasis in patients undergoing bariatric surgery.
-    <br/>
-    <br/>
-    </p>
 </p>
 
 [![](<https://img.shields.io/badge/Dataverse DOI-10.7910/DVN/4JZZLB-red>)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB)
 
 # Description 
-This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The dataset has already been pre-loaded in this repository.  
+This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The dataset has already been pre-loaded in this repository.  
 
 Since this repository is still in progress, I would suggest only focusing on the 2 Rmd documents found within the R folder, which names start with "Part_1" and "Part_2". I expect these two to be reproducible at this point. 
 
