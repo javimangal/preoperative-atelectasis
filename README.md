@@ -1,7 +1,19 @@
-# Preoperative atelectasis in patients undergoing bariatric surgery. 
+<br/>
+<p align="center">
+  <a href="https://github.com/UtrechtUniversity/yoda">
+    <img src="PABA.jpg" alt="PABA logo" width="750" height="272">
+  </a>
 
-## Usage
+  <p align="center">
+    Preoperative atelectasis in patients undergoing bariatric surgery.
+    <br/>
+    <br/>
+    </p>
+</p>
 
+[![](<https://img.shields.io/badge/Dataverse DOI-10.7910/DVN/4JZZLB-red>)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB)
+
+# Description 
 This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The dataset has already been pre-loaded in this repository.  
 
 Since this repository is still in progress, I would suggest only focusing on the 2 Rmd documents found within the R folder, which names start with "Part_1" and "Part_2". I expect these two to be reproducible at this point. 
@@ -21,17 +33,20 @@ The project structure distinguishes three kinds of folders:
 ├── LICENSE
 ├── README.md
 ├── requirements.txt
-├── data               <- All project data, ignored by git
-│   ├── processed      <- The final, canonical data sets for modeling. (PG)
-│   ├── raw            <- The original, immutable data dump. (RO)
-│   └── temp           <- Intermediate data that has been transformed. (PG)
-├── docs               <- Documentation notebook for users (HW)
-│   ├── manuscript     <- Manuscript source, e.g., LaTeX, Markdown, etc. (HW)
-│   └── reports        <- Other project reports and notebooks (e.g. Jupyter, .Rmd) (HW)
+├── preoperative_atelectasis.Rproj
+├── data                  <- All project data
+│   ├── processed         <- The final, canonical data sets for modeling. (PG)
+│   ├── raw               <- The original, immutable data. (RO)
+│   └── temp              <- Intermediate data that has been transformed. (PG)
+├── docs                  <- Documentation notebook for users (HW)
+│   ├── manuscript        <- Manuscript source, docx. (HW)
+│   └── reports           <- Project reports and notebooks (.Rmd) (HW)
 ├── results
-│   ├── figures        <- Figures for the manuscript or reports (PG)
-│   └── output         <- Other output for the manuscript or reports (PG)
-└── R                  <- Source code for this project (HW)
+│   ├── output_figures    <- Figures for the manuscript or reports (PG)
+│   └── output_tables     <- Other output for the manuscript or reports (PG)
+└── R                     <- Source code for this project (HW)
+│   ├── scripts           <- Scripts sourced in main R markdown documents (PG)
+│   └── sessions          <- Text files with R sessions information (PG)
 
 ```
 

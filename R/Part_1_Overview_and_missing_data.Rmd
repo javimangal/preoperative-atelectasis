@@ -27,9 +27,24 @@ if (!require("pacman", quietly = TRUE)) {
 pacman::p_load(
   tidyverse, # Used for basic data handling and visualization.
   overviewR, # Used to assess missing data.
-  table1 #Used to add labels to variables.
+  table1, #Used to add labels to variables.
+  ezknitr #Used to generate html output in a different folder   
 )
 ```
+
+```{r, include=FALSE}
+# Create directories for sub-folders  
+psfolder <- "../data/processed"
+reports <- "../docs/reports"
+dir.create(psfolder, showWarnings = FALSE)
+dir.create(reports, showWarnings = FALSE)
+```
+
+```{r, include=FALSE}
+# Select where every file should be sent.   
+ezknit(file = "analysis/report.Rmd", out_dir = "reports", fig_dir = "myfigs")
+```
+
 
 ##### Session info  
 ```{r, echo=FALSE}
@@ -43,7 +58,7 @@ session$loadedOnly <- NULL
 # write log file
 writeLines(
   capture.output(print(session, locale = FALSE)),
-  paste0(lubridate::today(), "_session_Part_1.txt")
+  paste0("sessions/",lubridate::today(), "_session_Part_1.txt")
 )
 
 session
@@ -51,14 +66,6 @@ session
 
 ```{r, include=FALSE}
 rm(session)
-```
-
-```{r, include=FALSE}
-# Create directories for sub-folders  
-psfolder <- "../data/processed"
-source_docs <- "../docs/source"
-dir.create(psfolder, showWarnings = FALSE)
-dir.create(psfolder, showWarnings = FALSE)
 ```
 
 ```{r, include=FALSE}
@@ -70,7 +77,7 @@ data <- read.csv("../data/raw/atelectasis_prevalence.csv",
 
 ```{r, include=FALSE}
 # Recode variables  
-source("variable_names_attributes_raw.R", local = knitr::knit_global())
+source("scripts/variable_names_attributes_raw.R", local = knitr::knit_global())
 ```
 
 ```{r, include=FALSE}
@@ -172,7 +179,7 @@ write.csv(data,
 ```
 
 ```{r, include=FALSE}
-rm(data, figfolder, psfolder, tabfolder)
+rm(data, psfolder, tabfolder)
 pacman::p_unload(negate = TRUE)
 ```
 
