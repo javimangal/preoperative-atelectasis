@@ -73,15 +73,12 @@ rm(session)
 data <- read.csv("../data/raw/atelectasis_prevalence.csv",
                  na.strings="NA", 
                  row.names = NULL)
-```
-
-```{r}
-#| include: false  
 
 # Recode variables  
 source("scripts/variable_names_attributes_raw.R", local = knitr::knit_global())
 rm(variable)
 ```
+
 
 ```{r}
 #| include: false  

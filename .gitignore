@@ -24,6 +24,9 @@
 # RStudio files
 .Rproj.user/
 
+# html within R folder  
+R/*.html
+
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
