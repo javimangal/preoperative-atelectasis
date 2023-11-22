@@ -25,7 +25,7 @@
 .Rproj.user/
 
 # html within R folder  
-R/*.html
+/R/*.html
 
 # produced vignettes
 vignettes/*.html
