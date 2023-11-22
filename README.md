@@ -1,10 +1,10 @@
 # Preoperative atelectasis in patients undergoing bariatric surgery. 
 
-This simple project structure template repository is adapted from the [Good Enough Project](https://github.com/bvreede/good-enough-project) Cookiecutter template by Barbara Vreede (2019).
+This project structure template repository is adapted from the [Good Enough Project](https://github.com/bvreede/good-enough-project) Cookiecutter template by Barbara Vreede (2019).
 
 ## Usage
 
-Click "Use this template" at the top of this page to create a new repository with the same folder structure.
+This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). 
 
 ## Project Structure
 
@@ -35,9 +35,14 @@ The project structure distinguishes three kinds of folders:
 
 ```
 
+
+## Documentation 
+This project has been divided into parts. HTML documents can be found in the docs folder, ru. 
+
 ## Add a citation file
 Create a citation file for your repository using [cffinit](https://citation-file-format.github.io/cff-initializer-javascript/#/)
 
+This project structure template repository is adapted from the [Good Enough Project](https://github.com/bvreede/good-enough-project) Cookiecutter template by Barbara Vreede (2019).
 ## License
 
 This project is licensed under the terms of the [MIT License](/LICENSE).
