@@ -1,7 +1,7 @@
 <br/>
 <p align="center">
   <a href="https://github.com/javimangal/preoperative-atelectasis">
-    <img src="PABA.jpg" alt="PABA logo" width="750" height="272">
+    <img src="PABA.jpg" alt="PABA logo" width="80%">
   </a>
 </p>
 
