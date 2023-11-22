@@ -101,9 +101,10 @@ rm(canada, usa, fig, fig_add, figS2, table, us_laea)
 
 # Distribution of numerical variables    
 
-Distributions were examined with the accompanying sourced function ***distribution_numerical_variables.R***      
-```{r, include = FALSE, fig.height = 4, fig.width = 6}
+Distributions were examined with the accompanying sourced function      ***distribution_numerical_variables.R***      
+```{r, include=FALSE, fig.height = 4, fig.width = 6}
 source("distribution_numerical_variables.R", local = knitr::knit_global())
+distribution_plots(data)
 ```
 
 Near normal distribution:  
@@ -155,9 +156,9 @@ rm(properties, name, table1, rndr, normal, nonormal, abbreviations, abbreviation
 ```
 
 
-NOTE: The **ASA** physical status variable has not been included in analyses since the [updated version of ASA](https://www.asahq.org/standards-and-practice-parameters/statement-on-asa-physical-status-classification-system) consulted on October 2023 classifies obesity (30<BMI<40) as ASA 2 and obesity (BMI ≥40) as ASA 3. The distribution of frequencies of ASA~obesity class in this dataset does not match such definition. This occurred since an outdated version of ASA that did not include obesity was likely used by clinicians when writing the preoperative assessment medical note:   
+NOTE: The **ASA** physical status variable has not been included in analyses since the [updated version of ASA](https://www.asahq.org/standards-and-practice-parameters/statement-on-asa-physical-status-classification-system) consulted in October 2023 classifies obesity (30<BMI<40) as ASA 2 and obesity (BMI ≥40) as ASA 3. The distribution of frequencies of ASA~obesity class in this dataset does not match such definition. This occurred since an outdated version of ASA that did not include obesity was likely used by clinicians when writing the preoperative assessment medical note:   
 
-```{r}
+```{r, echo=FALSE}
 table(data$ASA,data$type_obesity)
 ```
 
