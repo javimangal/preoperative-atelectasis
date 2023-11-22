@@ -1,7 +1,5 @@
 # Data
 /data/temp
-/data/processed
-/data/raw
 
 # History files
 .Rhistory
