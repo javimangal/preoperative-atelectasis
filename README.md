@@ -35,6 +35,10 @@ The project structure distinguishes three kinds of folders:
 
 ```
 
+## Getting started  
+First, clone this repository into your computer. After you do this, please open the "preoperative_atelectasis.Rproj" file in the main directory in R Studio. Within R studio, navigate to the R folder and open the "Part_1_Overview_and_missing_data.Rmd" file first. You can either directly knit it or run all of the chunks in this Rmd document manually. Results will show up in the Rmd file and will also show up in the results folder within the figures folder. After doing this, please open the "Part_2_Description_sample_table1.Rmd" and do the same. 
+
+Package dependencies can be found in the rendered html files with the same name as the prior 2 documents, which can be downloaded and opened in your own browser. These can also be found in the .txt files containing Part_1 and Part_2 in their names.   
 
 ## Documentation 
 This project has been divided into parts. HTML documents can be found in the docs folder, ru. 
