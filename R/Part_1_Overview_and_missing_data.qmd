@@ -3,6 +3,8 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 1: Overview, selection criteria, and missing data"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
+project: 
+    output-dir: --/docs/reports
 execute: 
   echo: true
   warning: false
@@ -11,6 +13,8 @@ format:
     toc: true
     toc_float: true
     embed-resources: true
+  pdf: 
+    output-dir: ../docs/reports
 editor: visual
 ---
 
@@ -193,8 +197,7 @@ write.csv(data,
 ```{r}
 #| include: false  
 
-# This chunk removes all created objects and loaded packages to keep
-# your environment and session clean after running this document. 
+# Run this chunk if you wish to clear your environment and unload packages.
 
 rm(data, psfolder, reports, variable_names_raw)
 pacman::p_unload(negate = TRUE)

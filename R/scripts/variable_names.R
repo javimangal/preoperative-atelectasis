@@ -208,3 +208,5 @@ for (variable in names(data)) {
     table1::label(data$prior_covid19) <- "Prior COVID-19"
   }
 }
+
+rm(variable)
