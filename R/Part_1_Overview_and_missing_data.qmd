@@ -25,6 +25,7 @@ if (!require("pacman", quietly = TRUE)) {
 
 pacman::p_load(
   tidyverse, # Used for basic data handling and visualization.
+  dataverse, # Retrieve dataset from the Harvard dataverse. 
   overviewR, # Used to assess missing data.
   table1 #Used to add labels to variables.
 )
@@ -59,10 +60,7 @@ writeLines(
 )
 
 session
-```
 
-```{r}
-#| include: false  
 rm(session)
 ```
 
@@ -70,13 +68,14 @@ rm(session)
 #| include: false  
 
 # Load dataset  
-data <- read.csv("../data/raw/atelectasis_prevalence.csv",
-                 na.strings="NA", 
-                 row.names = NULL)
+data <- get_dataframe_by_name(
+  filename = "atelectasis_prevalence.tab",
+  dataset = "10.7910/DVN/4JZZLB", 
+  server = "dataverse.harvard.edu")
+
 
 # Recode variables  
-source("scripts/variable_names_attributes_raw.R", local = knitr::knit_global())
-rm(variable)
+source("scripts/variable_names_raw.R", local = knitr::knit_global())
 ```
 
 
@@ -194,6 +193,10 @@ write.csv(data,
 ```{r}
 #| include: false  
 
-rm(data, psfolder, reports)
+# This chunk removes all created objects and loaded packages to keep
+# your environment and session clean after running this document. 
+
+rm(data, psfolder, reports, variable_names_raw)
 pacman::p_unload(negate = TRUE)
+
 ```

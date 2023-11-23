@@ -46,7 +46,7 @@ vignettes/*.pdf
 .Renviron
 
 # Manuscript on progress 
-docs/manuscript
+docs/manuscript/*docx
 
 # translation temp files
 po/*~

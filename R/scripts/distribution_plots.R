@@ -4,8 +4,8 @@ distribution_plots <- function(data){
   #' numeric variable in a dataframe 
   #' and creates histograms, boxplots, 
   #' and Q-Q plots.  
-  #' @param data The first value
-  #' @return The two arguments multiplied.
+  #' @param data A tibble.  
+  #' @return Histograms, boxplots and QQ-plots.
   for (variable in names(data)) {
     if (is.numeric(data[[variable]])) {
       name <- variable
