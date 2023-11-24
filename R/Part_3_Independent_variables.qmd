@@ -158,8 +158,9 @@ percentage
 Distribution of BMI was assessed earlier. It is right-skewed due to extreme values (verified outliers). The WHO classification of BMI for obesity class will be used to complement descriptions and for potential use later during statistical modelling.     
 
 > The median BMI was `r median(data$BMI)` (IQR: `r quantile(data$BMI, 0.25)`- `r quantile(data$BMI, 0.75)`). The distribution of BMI was right-skewed due to extreme BMI values (range: `r min(data$BMI)`- `r max(data$BMI)`). Most patients were in the class 3 obesity category (n=`r tab[3]`, `r prop[3]`%), followed by class 1 (n=`r tab[1]`, `r prop[1]`%) and 2 (n=`r tab[2]`, `r prop[2]`%). 
+a
 
-```{r, include=FALSE}
+ 
 rm(tab,prop)
 ```
 
