@@ -4,7 +4,7 @@ subtitle: "Part 1: Overview, selection criteria, and missing data"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
 project: 
-    output-dir: --/docs/reports
+    output-dir: ../docs/reports
 execute: 
   echo: true
   warning: false
@@ -14,7 +14,7 @@ format:
     toc_float: true
     embed-resources: true
   pdf: 
-    output-dir: ../docs/reports
+    documentclass: scrartcl
 editor: visual
 ---
 
@@ -45,7 +45,7 @@ dir.create(psfolder, showWarnings = FALSE)
 dir.create(reports, showWarnings = FALSE)
 ```
 
-##### Session info
+##### Session and package dependencies   
 
 ```{r}
 #| echo: false  

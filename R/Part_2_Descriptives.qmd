@@ -3,18 +3,17 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 2: Descriptive characteristics and map"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
-project: 
-    output-dir: ../docs/reports
+output-dir: /docs/reports
 execute: 
   echo: true
   warning: false
+toc: true
+toc_float: true
 format:
   html:
-    toc: true
-    toc_float: true
     embed-resources: true
   pdf: 
-    prefer-html: true
+    documentclass: scrartcl
 editor: visual
 ---
 
@@ -54,10 +53,11 @@ if (!require("remotes", quietly = TRUE)) {
 
 remotes::install_github("ropensci/rnaturalearthhires")
 
+pacman::p_load(rnaturalearthhires)
 ```
 
 
-##### Session   
+##### Session and package dependencies   
 ```{r}
 #| echo: false
 
@@ -118,7 +118,7 @@ This map was built by partly using code adapted from [contribution by cpsievert]
 
 # This may take a few seconds to run, please be patient and ignore warnings. 
 
-source("scripts/Map_USA_Canada.R")
+source("scripts/Map_USA_Canada.R", local = knitr::knit_global())
 fig
 
 rm(canada, usa, fig, fig_add, figS2, table, us_laea)
@@ -139,34 +139,34 @@ distribution_plots(data)
 ```
 
 Near normal distribution:  
-- Age: light tails  
-- height: heavy right tail, 4 outliers right  
-- hb: heavy tails, bilateral outliers    
-- hct: heavy tails, bilateral outliers  
-- leu: near normal, bilateral outliers  
-- neu_absolute: heavy right tail, two right outliers  
-- linf_absolute: heavy right tail, bilateral outliers (more right)     
-- mon_absolute: heavy right tail, bilateral outliers (more right)   
-- platelets: two right outliers   
-- urea: four right outliers  
-- creatinine: three right outliers  
+-   Age: light tails  
+-   height: heavy right tail, 4 outliers right  
+-   hb: heavy tails, bilateral outliers    
+-   hct: heavy tails, bilateral outliers  
+-   leu: near normal, bilateral outliers  
+-   neu_absolute: heavy right tail, two right outliers  
+-   linf_absolute: heavy right tail, bilateral outliers (more right)     
+-   mon_absolute: heavy right tail, bilateral outliers (more right)   
+-   platelets: two right outliers   
+-   urea: four right outliers  
+-   creatinine: three right outliers  
 
 
 Distribution not normal:  
-- Weight: right-skewed, outliers are verified observations of extreme weight.   
-- BMI: right-skewed, outliers are verified observations of extreme BMI.  
-- spo2_VPO: Left-skewed   
-- neu_percent: left-skewed  
-- linf_percent: right-skewed  
-- glucose: right-skewed  
-- mon_percent: observations around only 5 data points. Will not use this variable, only absolute monocytes will be used.     
-- altitude: distribution not clear as values are quite apart an concentrate around single states with diferring mean altitudes. Will attempt to model a smooth term or categorical term in subsequent analyses.         
+-   Weight: right-skewed, outliers are verified observations of extreme weight.   
+-   BMI: right-skewed, outliers are verified observations of extreme BMI.  
+-   spo2_VPO: Left-skewed   
+-   neu_percent: left-skewed  
+-   linf_percent: right-skewed  
+-   glucose: right-skewed  
+-   mon_percent: observations around only 5 data points. Will not use this variable, only absolute monocytes will be used.     
+-   altitude: distribution not clear as values are quite apart an concentrate around single states with diferring mean altitudes. Will attempt to model a smooth term or categorical term in subsequent analyses.         
 
 Outcome variable:  
-- atelectasis_percent: Zero-inflated. Would be difficult to manage as categorical ordinal due to low number of patients in some categories. Will re-assess alongside subsequent analyses to decide.   
+-   atelectasis_percent: Zero-inflated. Would be difficult to manage as categorical ordinal due to low number of patients in some categories. Will re-assess alongside subsequent analyses to decide.   
 
 
-# Table 1   
+# Characteristics of participants      
 Table 1 generated with the accompanying sourced script ***table1_arguments.R***    
 ```{r}
 #| include: false
@@ -180,6 +180,9 @@ Characteristics of participants are shown for the total sample and by obesity cl
 - Class 2, BMI [35,40) kg/m2     
 - Class 3, BMI >40 kg/m2     
 
+> Characteristics of participants according to BMI class are shown in **Table 1**.  
+
+## Table 1  
 ```{r}
 #| echo: false
 

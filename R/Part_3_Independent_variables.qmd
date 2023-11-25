@@ -6,22 +6,24 @@ date: "`r Sys.Date()`"
 project: 
     output-dir: ../docs/reports
 execute: 
-  echo: true
+  echo: false
   warning: false
+toc: true
+toc_float: true
 format:
   html:
-    toc: true
-    toc_float: true
     embed-resources: true
-  pdf: 
-    prefer-html: true
+  pdf:
+    documentclass: scrartcl
 editor: visual
 ---
 
-# Setup 
+# Setup
 
-#### Packages used   
+#### Packages used
+
 ```{r}
+#| echo: true
 if (!require("pacman", quietly = TRUE)) {
   install.packages("pacman")
 }
@@ -30,23 +32,17 @@ if (!require("pacman", quietly = TRUE)) {
 pacman::p_load(
   tidyverse, # Used for basic data handling and visualization.
   table1, #Used to add lables to variables.
-  RColorBrewer, #Color palettes for data visualization. 
-  gridExtra, #Used to arrange multiple ggplots in a grid.  
-  grid, #Used to arrange multiple ggplots in a grid.
-  flextable, #Used to export tables.  
-  officer,  #Used to export tables.
   mgcv, #Used to model non-linear relationships with a general additive model.  
   ggmosaic, #Used to create mosaic plots.   
   car, #Used to visualize distribution of continuous variables (stacked Q-Q plots).
-  dagitty #Used in conjunction with https://www.dagitty.net/ to create directed acyclic graph to inform statistical modelling.
+  dagitty #Used in conjunction with https://www.dagitty.net/ to create 
+          #directed acyclic graph to inform statistical modelling.
 )
 ```
 
+##### Session and package dependencies
 
-##### Session   
 ```{r}
-#| echo: false
-
 # Credits chunk of code: Alex Bossers, Utrecht University (a.bossers@uu.nl)
 
 # remove clutter
@@ -66,17 +62,13 @@ rm(session)
 
 ```
 
-
 ```{r}
 #| include: false
 
 # Create directories for sub-folders 
 figfolder <- "../results/output_figures"
-tabfolder <- "../results/output_tables"
 dir.create(figfolder, showWarnings = FALSE)
-dir.create(tabfolder, showWarnings = FALSE)
 ```
-
 
 ```{r}
 #| include: false
@@ -90,45 +82,56 @@ source("scripts/variable_names.R")
 
 ```
 
-# Assessment of independent variables     
+# Assessment of independent variables
 
-The selection of variables that will be assessed is according to the following directed acyclic graph which will be used again before statistical modelling, to assess conditional independencies.     
+The selection of variables that will be assessed is according to the following directed acyclic graph which will be used again before statistical modelling, to assess conditional independencies.
 
 ## DAG
 
-DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG.R***   
-```{r}
-#| echo: false
+DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG.R***
 
+```{r}
 source("scripts/DAG.R")
 plot(DAG)
+rm(DAG)
 ```
 
-Other variables that are potential confounders are not shown in this DAG since they were addressed by design in this study as follows:   
-- Current COVID-19: Exclusion criteria were applied to **n=2** patients with CO-RADS 3 and **n=2** with CO-RADS 4. Only participants with low probability of COVID-19 (CO-RADS 1 and 2) were included in this study.      
-- Prior COVID-19: This was an exclusion criterion (**n=3**).   
-- Bronchiectasis: This was an exclusion criterion (n=0).      
+Other variables that are potential confounders are not shown in this DAG since they were addressed by design in this study as follows:
 
-## Description of independent variables  
+-   Current COVID-19: Exclusion criteria were applied to **n=2** patients with CO-RADS 3 and **n=2** with CO-RADS 4. Only participants with low probability of COVID-19 (CO-RADS 1 and 2) were included in this study.
 
-#### Age  
+-   Prior COVID-19: This was an exclusion criterion (**n=3**).
+
+-   Bronchiectasis: This was an exclusion criterion (n=0).
+
+## Description of independent variables
+
 ```{r}
 #| include: false
 
 attach(data)
 ```
 
+#### Age
+
+Summary:
+
 ```{r}
 summary(age)
 ```
 
-> The mean age was `r round(mean(data$age, na.rm=TRUE),1)` (SD: `r round(sd(data$age, na.rm=TRUE),2)`).     
+> The mean age was `r round(mean(data$age, na.rm=TRUE),1)` (SD: `r round(sd(data$age, na.rm=TRUE),2)`).
 
-#### Sex  
+#### Sex
+
+Frequencies:
+
 ```{r}
 frequencies <- table(sex)
 frequencies
 ```
+
+Percentage:
 
 ```{r}
 percentage <- round(prop.table(frequencies)*100,1)
@@ -137,43 +140,56 @@ percentage
 
 > Most patients in the sample were woman (n=`r frequencies[1]`, `r percentage[1]`%).
 
-```{r, include=FALSE}
+```{r}
 #| include: false
 rm(frequencies,percentage)
 ```
 
-#### Body mass index (BMI)  
+#### Body mass index (BMI)
+
+Summary:
+
 ```{r}
 summary(BMI)
 ```
 
+Frequencies:
 
 ```{r}
 frequencies <- table(type_obesity)
 frequencies
+```
+
+Percentage:
+
+```{r}
 percentage <- round(prop.table(frequencies)*100,1)
 percentage
-
-```
-Distribution of BMI was assessed earlier. It is right-skewed due to extreme values (verified outliers). The WHO classification of BMI for obesity class will be used to complement descriptions and for potential use later during statistical modelling.     
-
-> The median BMI was `r median(data$BMI)` (IQR: `r quantile(data$BMI, 0.25)`- `r quantile(data$BMI, 0.75)`). The distribution of BMI was right-skewed due to extreme BMI values (range: `r min(data$BMI)`- `r max(data$BMI)`). Most patients were in the class 3 obesity category (n=`r tab[3]`, `r prop[3]`%), followed by class 1 (n=`r tab[1]`, `r prop[1]`%) and 2 (n=`r tab[2]`, `r prop[2]`%). 
-a
-
- 
-rm(tab,prop)
 ```
 
-#### SpO2  
+Distribution of BMI was assessed earlier. It is right-skewed due to extreme values (verified outliers). The WHO classification of BMI for obesity class will be used to complement descriptions and for potential use later during statistical modelling.
+
+> The median BMI was `r median(data$BMI)` (IQR: `r quantile(data$BMI, 0.25)`- `r quantile(data$BMI, 0.75)`). The distribution of BMI was right-skewed due to extreme BMI values (range: `r min(data$BMI)`- `r max(data$BMI)`). Most patients were in the class 3 obesity category (n=`r frequencies[3]`, `r percentage[3]`%), followed by class 1 (n=`r frequencies[1]`, `r percentage[1]`%) and 2 (n=`r frequencies[2]`, `r percentage[2]`%). a
+
+```{r}
+#| include: false
+rm(frequencies,percentage)
+```
+
+#### SpO2
+
+Summary:
+
 ```{r}
 summary(spo2_VPO)
 ```
-Distribution of SpO2 during the pre-anesthetic assessment was presented earlier. It is left-skewed due to some participants exhibiting decreased SpO2. Will categorize according to clinical categories to assess the proportion of patients with decreased SpO2.   
+
+Distribution of SpO2 during the pre-anesthetic is left-skewed due to some participants exhibiting decreased SpO2. I will categorize according to clinical categories to assess the proportion of patients with decreased SpO2:
 
 ###### Proportion of patients with decreased SpO2
 
-First, create SpO2 breaks:   
 ```{r}
+# Creation of SpO2 categories:  
 data <- data %>% 
   mutate(spo2_cat = cut(spo2_VPO,
                         breaks=c(87,90,94,100),
@@ -183,45 +199,67 @@ data <- data %>%
          )
 ```
 
+```{r}
+#| include: false
 
-```{r, include=FALSE}
 detach(data)
-attach(data)
+attach(data) 
 # This is done to update the attached dataset with the newly created variable.   
 ```
 
+Frequencies:
 
 ```{r}
-tab <- table(spo2_cat)
-tab
-prop <- round(prop.table(tab)*100,1)
-prop
+frequencies <- table(spo2_cat)
+frequencies
 ```
 
-> The median SpO2 during the pre-anethetic assessment was `r median(data$spo2_VPO)` (IQR: `r quantile(data$spo2_VPO, 0.25)`-`r quantile(data$spo2_VPO, 0.75)`) %, with a minimum value of `r min(data$spo2_VPO)`%. Of these,  n=`r tab[3]` (`r prop[3]`%) had normal SpO2 (above 94%), whereas n=`r tab[2]` (`r prop[2]`%) had a value in the 90-94% range, and n=`r tab[1]` (`r prop[1]`%) had ≤90%.
+Percentage:
 
-```{r, include=FALSE}
-rm(tab,prop)
-```
-
-#### Obstructive sleep apnea  
 ```{r}
-tab <- table(sleep_apnea)
-tab
-prop <- round(prop.table(tab)*100,1)
-prop
-```
-> Patients with a diagnosis of OSA were `r prop[2]`% (n=`r tab[2]`) of the sample.  
-
-```{r, include=FALSE}
-rm(tab,prop)
+percentage <- round(prop.table(frequencies)*100,1)
+percentage
 ```
 
-#### Altitude   
+> The median SpO2 during the pre-anethetic assessment was `r median(data$spo2_VPO)` (IQR: `r quantile(data$spo2_VPO, 0.25)`-`r quantile(data$spo2_VPO, 0.75)`) %, with a minimum value of `r min(data$spo2_VPO)`%. Of these, n=`r frequencies[3]` (`r percentage[3]`%) had normal SpO2 (above 94%), whereas n=`r frequencies[2]` (`r percentage[2]`%) had a value in the 90-94% range, and n=`r frequencies[1]` (`r percentage[1]`%) had ≤90%.
+
+```{r}
+#| include: false
+rm(frequencies,percentage)
+```
+
+#### Obstructive sleep apnea
+
+Frequencies:
+
+```{r}
+frequencies <- table(sleep_apnea)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percentage <- round(prop.table(frequencies)*100,1)
+percentage
+```
+
+> Patients with a diagnosis of OSA were `r percentage[2]`% (n=`r frequencies[2]`) of the sample.
+
+```{r}
+#| include: false
+rm(frequencies,percentage)
+```
+
+#### Altitude
+
+Summary:
+
 ```{r}
 summary(altitude)
 ```
-Distribution of altitude was assessed earlier. Cannot assume normal distribution. Thus, I will create a new variable categorizing values according to the [study by Crocker ME, et al](https://doi.org/10.1016/S2214-109X(19)30543-1).   
+
+Distribution of altitude was assessed earlier. Distribution is very unclear due to very widespread datapoints. Thus, I will create a new variable categorizing values according to the [study by Crocker ME, et al](https://doi.org/10.1016/S2214-109X(19)30543-1).
 
 ```{r}
 data <- data %>% 
@@ -233,35 +271,46 @@ data <- data %>%
          )
 ```
 
-```{r, include=FALSE}
+```{r}
+#| include: false
+
 detach(data)
-attach(data)
+attach(data) 
 # This is done to update the attached dataset with the newly created variable.   
 ```
 
+Frequencies:
+
 ```{r}
-tab <- table(altitude_cat)
-tab
-round(prop.table(tab)*100,1)
+frequencies <- table(altitude_cat)
+frequencies
 ```
 
-```{r, include=FALSE}
-rm(tab)
+Percentage:
+
+```{r}
+round(prop.table(frequencies)*100,1)
 ```
 
+```{r}
+#| include: false
+rm(frequencies)
+```
 
-#### Hemoglobin     
+#### Hemoglobin
+
+Summary:
+
 ```{r}
 summary(hb)
 ```
-Distribution of hemoglobin was assessed earlier. Two participants don't have a hemoglobin value.     
 
-## Relationships between independent variables  
+Distribution of hemoglobin was assessed and follows a normal distribution. Two participants don't have a hemoglobin value.
 
-> Characteristics of participants according to BMI class are shown in **Table 1**.  
+## Relationships between independent variables
 
-### BMI and SpO2   
-Scatterplot  
+### BMI and SpO2
+
 ```{r}
 plot(spo2_VPO~BMI, 
      main="Scatterplot", 
@@ -270,190 +319,146 @@ plot(spo2_VPO~BMI,
      )
 ```
 
-Relationship does not seem to be linear (also, variables were not normally distributed, with outliers), but suggests a negative correlation. Will assess if a smooth BMI term explains SpO2 better, and if so, what is the best number of knots to model this relationship:       
+Relationship does not seem to be linear (also, variables were not normally distributed, with outliers), but suggests a negative correlation. Will assess if a smooth BMI term explains SpO2 better, and if so, what is the best number of knots to model this relationship:
 
-GAM model with k=2:   
+Models evaluated with the accompanying sourced script ***nonlinear_BMI_SpO2.R***
+
 ```{r}
-model<-gam(spo2_VPO~s(BMI,k=2))
-AIC_k2 <- AIC(model)
-summary(model)
-k.check(model)
-plot(model)
+#| include: false
+
+source("scripts/nonlinear_BMI_SpO2.R", local = knitr::knit_global())
 ```
 
-GAM model with k=4:   
+All non-linear models are significantly better than linear. Thus, using a smooth term for BMI is better than modelling a linear relationship.
+
+Best AIC:
+
 ```{r}
-model<-gam(spo2_VPO~s(BMI,k=4))
-AIC_k4 <- AIC(model)
-summary(model)
-k.check(model)
-plot(model)
-```
-
-
-GAM model with k=6:   
-```{r}
-model<-gam(spo2_VPO~s(BMI,k=6))
-AIC_k6 <- AIC(model)
-summary(model)
-k.check(model)
-plot(model)
-```
-
-GAM model with k=8:   
-```{r}
-model<-gam(spo2_VPO~s(BMI,k=8))
-AIC_k8 <- AIC(model)
-summary(model)
-k.check(model)
-plot(model)
-```
-
-GAM model with k=12:   
-```{r}
-model<-gam(spo2_VPO~s(BMI,k=12))
-AIC_k12 <- AIC(model)
-summary(model)
-k.check(model)
-plot(model)
-```
-
-
-Best AIC:  
-```{r}
+#| echo: true
 list(AIC_k2,AIC_k4,AIC_k6,AIC_k8,AIC_k12)
 ```
-All models are significantly better than linear. Thus, using a smooth term for BMI is better than modelling a linear relationship.   
 
-Regarding AIC, the models with k>6 are not better at explaining the variance. Will try a model with k=5 since the best model is expected to be anywhere between k=4 and k=6:   
+Regarding AIC, the models with k\>6 are not better at explaining the variance. Thus, I will with k=5 since the best model is expected to be anywhere between k=4 and k=6:
 
-GAM model with k=5 (4 degrees of freedom):   
 ```{r}
-model<-gam(spo2_VPO~s(BMI,k=5))
-AIC_k5 <- AIC(model)
-summary(model)
-k.check(model)
-plot(model)
-```
+#| echo: true
 
-Best AIC:  
-```{r}
 list(AIC_k4,AIC_k5,AIC_k6)
 ```
 
-Model with k=5 still offers and advantage compared to k=4 (drop in AIC). No other improvements in k-index or visual representation are achieved with higher k. Thus, will use k=5 to model.   
+Model with k=5 still offers and advantage compared to k=4 (drop in AIC). No other improvements in k-index or visual representation are achieved with higher k. Thus, will use k=5 to model.
 
 ```{r}
-fig1b <- ggplot(data, aes(BMI,spo2_VPO)) + 
-  geom_point(size=0.6,color="gray60") +
-  geom_smooth(method="gam",formula = y ~ s(x, bs = "cs", k = 5), color="cadetblue4")  + 
-  labs(y="SpO2 (%)",x="Body mass index (kg/m²)",tag="B") + 
-  ylim(83,100) + xlim(30,80) +
-  theme_bw() + 
-  theme(panel.border = element_blank(), 
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), 
-        axis.line = element_line(colour = "black"),
-        axis.text.x = element_text(size=rel(1.2)), 
-        axis.text.y = element_text(size=rel(1.2))
-        )
 fig1b
 ```
-   
-Negative non-monotonic relationship since SpO2 decreases, but then seems to increase slightly again at BMI 40, followed by a marked decrease as BMI decreases at values higher than ~42. 
 
-Spearman's correlation coefficient shouldn't be used due to relationship not being monotonically decreasing. However, I will calculate it just to have a rough idea (but will not report this in the paper).        
+Negative non-monotonic relationship since SpO2 decreases, but then seems to increase slightly again at BMI 40, followed by a marked decrease as BMI decreases at values higher than \~42.
+
+Spearman's correlation coefficient shouldn't be used due to relationship not being monotonically decreasing. However, I will calculate it just to have a rough idea (but will not report this in the paper).
+
 ```{r}
-spearman <- cor.test(spo2_VPO,BMI,method="spearman",exact=FALSE)
+spearman <- cor.test(spo2_VPO, BMI, 
+                     method="spearman",
+                     exact=FALSE
+                     )
 spearman
 ```
 
-##### Figure 1b 
+> BMI exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1B**, rho= `r round(spearman$estimate,3)`, p\<0.001).
+
 ```{r}
-ggsave("Figure1b.png",plot=fig1b,
-       path=figfolder, 
-       width = 8,  height = 6, units = "in", dpi = 300
-       )
+#| include: false
+rm(AIC_k2,AIC_k4,AIC_k5,AIC_k6,AIC_k8,AIC_k12,model,spearman,fig1b)
 ```
 
+### BMI and age
 
-> BMI exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1B**, rho= `r round(spearman$estimate,3)`, p<0.001).
-
-```{r, include=FALSE}
-rm(AIC_k2,AIC_k4,AIC_k5,AIC_k6,AIC_k8,AIC_k12,model,spearman)
-```
-
-### BMI and age  
-Scatterplot  
 ```{r}
 plot(age~BMI, 
      main="Scatterplot", 
      ylab="Age (years)", 
-     xlab="Body mass index (BMI)"
+     xlab="Body mass index (kg/m²)"
      )
 ```
 
-Datapoints scattered. Relationship probably linear, but there are influential true outliers with extreme BMI. Will assess with Spearman correlation analysis due to extreme BMI values.  
+Datapoints scattered. Relationship monotonic and probably linear, but there are influential true outliers with extreme BMI. Will assess with Spearman correlation analysis due to extreme BMI values.
 
 ```{r}
-spearman <- cor.test(age,BMI,method="spearman",exact=FALSE)
+spearman <- cor.test(age,BMI,
+                     method="spearman",
+                     exact=FALSE
+                     )
+
 spearman
 ```
 
-> Age had a weak negative correlation with BMI (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).  
+> Age had a weak negative correlation with BMI (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false
 rm(spearman)
 ```
 
+### BMI and sex
 
-### BMI and sex   
+Median BMI:
 
 ```{r}
 data_BMI <- data %>% group_by(sex) 
 
 median_bmi <- data_BMI %>% 
   summarize(n = n(), 
-            BMI_median = median(BMI), 
+            median = median(BMI), 
             Q1 = quantile(BMI,0.25), 
             Q3 = quantile(BMI,0.75), 
             min = min(BMI), 
             max = max(BMI)
             )
+
 median_bmi
 ```
 
 ```{r}
-boxplot(BMI ~ sex)
+boxplot(BMI ~ sex,
+        ylab="Body mass index (kg/m²)",
+        xlab="Sex"
+        )
 ```
 
-Distribution not normal and influential outliers. Will assess non-parametrically.  
+Distribution not normal and influential outliers. Will assess non-parametrically.
 
 ```{r}
-wil <- wilcox.test(BMI ~ sex, data = data_BMI, exact = FALSE)
+wil <- wilcox.test(BMI ~ sex,
+                   data = data_BMI,
+                   exact = FALSE
+                   )
 wil
 ```
 
-> The median BMI was not different between men (`r round(median_bmi$BMI_median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) and women (`r round(median_bmi$BMI_median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+> The median BMI was not different between men (`r round(median_bmi$median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) and women (`r round(median_bmi$median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false
 rm(data_BMI,median_bmi,wil)
 ```
 
+### BMI and sleep apnea
 
-### BMI and sleep apnea  
 ```{r}
-boxplot(BMI ~ sleep_apnea)
+boxplot(BMI ~ sleep_apnea,
+        ylab="Body mass index (kg/m²)",
+        xlab="Obstructive sleep apnea"
+        )
 ```
 
-Distribution not normal and influential outliers. Will assess non-parametrically.  
+Distribution not normal and influential outliers. Will assess non-parametrically.
 
 ```{r}
 data_BMI <- data %>% group_by(sleep_apnea) 
 
 median_bmi <- data_BMI %>% 
   summarize(n = n(),
-            BMI_median = median(BMI),
+            median = median(BMI),
             Q1 = quantile(BMI,0.25),
             Q3 = quantile(BMI,0.75),
             min = min(BMI),
@@ -463,58 +468,78 @@ median_bmi
 ```
 
 ```{r}
-wil <- wilcox.test(BMI ~ sleep_apnea, data = data_BMI, exact = FALSE)
+wil <- wilcox.test(BMI ~ sleep_apnea, 
+                   data = data_BMI, 
+                   exact = FALSE
+                   )
 wil
 ```
 
-> The median BMI was significantly higher in participants with sleep apnea (`r round(median_bmi$BMI_median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) compared to those without OSA (`r round(median_bmi$BMI_median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+> The median BMI was significantly higher in participants with sleep apnea (`r round(median_bmi$median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) compared to those without OSA (`r round(median_bmi$median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false
 rm(data_BMI,median_bmi,wil)
 ```
 
-### Age and SpO2   
+### Age and SpO2
 
-Scatterplot
 ```{r}
 plot(spo2_VPO~age, 
      main="Scatterplot",
-     xlab="Age",
+     xlab="Age (years)",
      ylab="SpO2 (%)"
      )
 ```
 
-Do not seem to be correlated. Will apply Spearman's correlation test:  
+Do not seem to be correlated. Will apply Spearman's correlation test:
+
 ```{r}
-spearman <- cor.test(spo2_VPO,age,method="spearman",exact=FALSE)
+spearman <- cor.test(spo2_VPO,age,
+                     method="spearman",
+                     exact=FALSE
+                     )
 spearman
 ```
 
 > Age and SpO2 were not correlated (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(spearman)
 ```
 
-### Age and sex  
+### Age and sex
 
 ```{r}
-boxplot(age~sex)
+boxplot(age~sex,
+        ylab="Age (years)",
+        xlab="Sex"
+        )
 ```
-
-Assess distribution of age by sex:    
 
 ```{r}
 data_age <- data %>% group_by(sex)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
 
 ggplot(data_age,aes(x = age)) +
   geom_histogram(fill = "firebrick3", colour = "black") +
   facet_grid(sex ~ .)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
 
 qqPlot(age ~ sex, data=data_age)
 ```
 
-Distribution near-normal, but light tails for women. However, t-test could be robust to deviations from normality and differences in group size. Will assess mean and variance for further testing:  
+Distribution near-normal, but light tails for women. However, t-test could be robust to deviations from normality and differences in group size. Will assess mean and variance for further testing:
+
 ```{r}
 mean_age <- data_age %>% 
   summarise(n=n(),
@@ -523,34 +548,43 @@ mean_age <- data_age %>%
             variance = var(age)
             )
 mean_age
-```  
+```
 
-Variances are similar. However, group sizes differ my 10x. Welch's t-test more suitable:    
+Variances are similar. However, group sizes differ my 10x. Welch's t-test more suitable:
 
 ```{r}
 t_test <- t.test(age ~ sex, data = data_age)
 t_test
 ```
 
-> Mean age was similar bethween men (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and women (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`). 
+> Mean age was similar bethween men (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and women (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_age,mean_age,t_test)
 ```
 
-
-### Age and sleep apnea  
+### Age and sleep apnea
 
 ```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot.  
+
 data_age <- data %>% group_by(sleep_apnea)
 
 ggplot(data_age, aes(x = age, fill=sleep_apnea)) +
   geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
 
 qqPlot(age ~ sleep_apnea)
 ```
 
-Distribution near-normal. Will assess mean and variance for further testing.  
+Distribution near-normal. Will assess mean and variance for further testing.
+
 ```{r}
 mean_age <- data_age %>% 
   summarise(n=n(), 
@@ -559,39 +593,50 @@ mean_age <- data_age %>%
             variance = var(age)
             )
 mean_age
-```  
+```
 
-Size per group very different, variances do not look similar. Welch's t-test more suitable:    
-
+Size per group very different, variances do not look similar. Welch's t-test more suitable:
 
 ```{r}
 t_test <- t.test(age ~ sleep_apnea, data = data_age)
 t_test
 ```
 
-> Age was not significantly different between participants with OSA (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`). 
+> Age was not significantly different between participants with OSA (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false
 rm(data_age,mean_age,t_test)
 ```
 
-
-### SpO2 and sex  
+### SpO2 and sex
 
 ```{r}
-boxplot(spo2_VPO ~ sex)
+boxplot(spo2_VPO ~ sex,
+        ylab="SpO2 (%)",
+        xlab="Sex"
+        )
 ```
 
 ```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
 data_spo2 <- data %>% group_by(sex)
 
 ggplot(data_spo2, aes(x = spo2_VPO, fill=sex)) +
   geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
 
 qqPlot(spo2_VPO ~ sex)
 ```
 
-Distribution deviates from normal and small group size for men. Will assess non-parametrically.  
+Distribution deviates from normal and small group size for men. Will assess non-parametrically.
+
 ```{r}
 median_spo2 <- data_spo2 %>% 
   summarize(n = n(),
@@ -602,35 +647,51 @@ median_spo2 <- data_spo2 %>%
             max = max(spo2_VPO)
             )
 median_spo2
-```  
+```
 
 ```{r}
-wil <- wilcox.test(spo2_VPO ~ sex, data = data_spo2, exact = FALSE)
+wil <- wilcox.test(spo2_VPO ~ sex, 
+                   data = data_spo2, 
+                   exact = FALSE
+                   )
 wil
 ```
 
-> The median SpO2 was not different between men (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) and women (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+> The median SpO2 was not different between men (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) and women (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_spo2,median_spo2,wil)
 ```
 
-### SpO2 and sleep apnea  
+### SpO2 and sleep apnea
 
 ```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
 data_spo2 <- data %>% group_by(sleep_apnea)
 
 ggplot(data_spo2, aes(x = spo2_VPO, fill=sleep_apnea)) +
   geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
 
 qqPlot(spo2_VPO ~ sleep_apnea)
 ```
 
 ```{r}
-boxplot(spo2_VPO ~ sleep_apnea)
+boxplot(spo2_VPO ~ sleep_apnea,
+        ylab="SpO2 (%)",
+        xlab="Obstructive sleep apnea"
+        )
 ```
 
-Distribution not normal, and smaller group size for those with sleep apnea. Will assess non-parametrically.   
+Distribution not normal, and smaller group size for those with sleep apnea. Will assess non-parametrically.
+
 ```{r}
 median_spo2 <- data_spo2 %>% 
   summarize(n = n(), 
@@ -641,38 +702,41 @@ median_spo2 <- data_spo2 %>%
             max = max(spo2_VPO)
             )
 median_spo2
-```  
+```
 
 ```{r}
-wil <- wilcox.test(spo2_VPO ~ sleep_apnea, data = data_spo2, exact = FALSE)
+wil <- wilcox.test(spo2_VPO ~ sleep_apnea,
+                   data = data_spo2,
+                   exact = FALSE
+                   )
 wil
 ```
 
-> Patients with sleep apnea had a lower median SpO2 (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) than those without OSA (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p<0.001).  
+> Patients with sleep apnea had a lower median SpO2 (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) than those without OSA (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p\<0.001).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_spo2,median_spo2,wil)
 ```
 
+### SpO2 and altitude
 
-### SpO2 and altitude    
-Scatterplot  
 ```{r}
 plot(spo2_VPO~altitude, data=data, 
      main="Scatterplot", 
      xlab="Mean altitude (meters)", 
      ylab="SpO2 (%)"
      )
-abline(lm(spo2_VPO~altitude),col="steelblue")
 ```
 
-There does not seem to be a pattern.          
+There does not seem to be a pattern.
 
-Would a smooth term be useful to model altitude?   
+Would a smooth term be useful to model altitude?
+
 ```{r}
 ggplot(data, aes(altitude,spo2_VPO)) + 
   geom_point(size=0.6,color="gray40") + 
-  geom_smooth(method="loess", color="cadetblue4") +
+  geom_smooth(method="loess", color="skyblue3") +
   ylab("SpO2 (%)") + xlab("Mean altitude (meters)") + 
   ylim(85,100) + xlim(0,2000) +
   theme_bw() + 
@@ -684,43 +748,51 @@ ggplot(data, aes(altitude,spo2_VPO)) +
         )
 ```
 
-It is likely that a smooth term for SpO2 would be non-informative since there is no clear reasonable pattern in this smooth plot. Additionally, it is well known that any impacts in SpO2 due to altitudes up to 2000 are very limited (i.e 1 to 2 units). [REF](https://thorax.bmj.com/content/73/8/776).  
+It is likely that a smooth term for SpO2 would be non-informative since there is no clear reasonable pattern in this smooth plot. Additionally, it is well known that any impacts in SpO2 due to altitudes up to 2000 are very limited (i.e 1 to 2 units). [go to reference](https://thorax.bmj.com/content/73/8/776).
 
-I will still check if a smooth term may be better than linear in case that adjustment for this variable is needed.   
+I will still check if a smooth term may be better than linear in case that adjustment for this variable is needed.
 
-GAM model with k=2:   
-```{r}
-model<-gam(spo2_VPO~s(altitude,k=2))
-summary(model)
-k.check(model)
-plot(model)
-```
+GAM model with k=4 (this was also checked with varying k from 2 to 10):
 
 ```{r}
 model<-gam(spo2_VPO~s(altitude,k=4))
 summary(model)
-k.check(model)
+```
+
+```{r}
 plot(model)
 ```
 
-Smooth term is not significantly better than one assuming linearity. Furthermore, the relationship with SpO2 in smooth term does not make any sense (i.e., according to prior reference, SpO2 should decrease at higher altitudes). Thus, it would be very likely that including this term would only explain noise in any case, not the true known causal relationship between SpO2 and altitude.   
+Smooth term is not significantly better than one assuming linearity. Furthermore, the relationship with SpO2 in smooth term does not make any sense (i.e., according to prior reference, SpO2 should decrease at higher altitudes). Thus, it would be very likely that including this term would only explain noise in any case, not the true known causal relationship between SpO2 and altitude.
 
-Lastly, will check the pattern according to altitude categories, which may be a better term to use in models in any case.     
+Lastly, will check the pattern according to altitude categories, which may be a better term to use in models in any case.
 
 ```{r}
-boxplot(spo2_VPO ~ altitude_cat)
+boxplot(spo2_VPO ~ altitude_cat,
+        ylab="SpO2 (%)",
+        xlab="Mean altitude of place of residence"
+        )
 ```
 
 ```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
 data_spo2 <- data %>% group_by(altitude_cat)
 
 ggplot(data_spo2, aes(x = spo2_VPO, fill=altitude_cat)) +
   geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
 
 qqPlot(spo2_VPO ~ altitude_cat)
 ```
 
-Distribution deviates from normal and small group size for the moderate altitude group. Will assess non-parametrically.  
+Distribution deviates from normal and small group size for the moderate altitude group. Will assess non-parametrically.
+
 ```{r}
 median_spo2 <- data_spo2 %>% 
   summarize(n = n(),
@@ -731,28 +803,25 @@ median_spo2 <- data_spo2 %>%
             max = max(spo2_VPO)
             )
 median_spo2
-```  
+```
 
 ```{r}
-wil <- wilcox.test(spo2_VPO ~ altitude_cat, data = data_spo2, exact = FALSE)
+wil <- wilcox.test(spo2_VPO ~ altitude_cat, 
+                   data = data_spo2,
+                   exact = FALSE
+                   )
 wil
 ```
 
-> The median SpO2 was not different between low and moderate altitude categories (p=`r round(wil$p.value,3)`).  
-
-```{r, include=FALSE}
-rm(data_spo2,median_spo2,wil)
-```
-
-
-### SpO2 and hemoglobin      
+> The median SpO2 was not different between low and moderate altitude categories (p=`r round(wil$p.value,3)`).
 
 ```{r}
-summary(hb)
+#| include: false 
+rm(data_spo2, median_spo2, wil, model)
 ```
 
+### SpO2 and hemoglobin
 
-Scatterplot  
 ```{r}
 plot(spo2_VPO~hb, data=data, 
      main="Scatterplot", 
@@ -762,11 +831,13 @@ plot(spo2_VPO~hb, data=data,
 abline(lm(spo2_VPO~altitude),col="red")
 ```
 
-There does not seem to be a clear pattern.          
+There does not seem to be a clear pattern.
 
-Would a smooth term be useful to model SpO2?   
+Would a smooth term be useful to model SpO2?
+
 ```{r}
-ggplot(data, aes(hb,spo2_VPO)) + 
+data %>% drop_na(hb) %>% 
+ggplot(aes(hb,spo2_VPO)) + 
   geom_point(size=0.6,color="gray40") + 
   geom_smooth(method="loess", color="red") +
   ylab("SpO2 (%)") + xlab("Hemoglobin (g/dL)") + 
@@ -781,78 +852,103 @@ ggplot(data, aes(hb,spo2_VPO)) +
         )
 ```
 
-Hemoglobin likely has an effect on SpO2 at lower hemoglobin values, which makes sense with what is observed in the graph. Assuming a linear relationship could lead to incorrect conclusions according to this. Nonetheless, it looks like the apparent non-linear relationship at low Hb values is due to only 2 observations with wide confidence intervals showing that the true slope could go either up, straight or down, so it may also be incorrect to assume a non-linear relationship based only on this plot. I will model to see if there is an optimal smooth term for hemoglobin or if a linear term best fits the data:    
+Hemoglobin likely has an effect on SpO2 at lower hemoglobin values, which makes sense with what is observed in the graph. Assuming a linear relationship could lead to incorrect conclusions according to this. Nonetheless, it looks like the apparent non-linear relationship at low Hb values is due to only 2 observations with wide confidence intervals showing that the true slope could go either up, straight or down, so it may also be incorrect to assume a non-linear relationship based only on this plot. I will model to see if there is an optimal smooth term for hemoglobin or if a linear term best fits the data:
 
-GAM model with k=2:   
-```{r}
-model<-gam(spo2_VPO~s(hb,k=2))
-summary(model)
-k.check(model)
-plot(model)
-```
+GAM model with k=4 (this was also checked with varying k from 2 to 10):
 
-GAM model with k=4:   
 ```{r}
 model<-gam(spo2_VPO~s(hb,k=4))
 summary(model)
-k.check(model)
+```
+
+```{r}
 plot(model)
 ```
 
-The estimated degrees of freedom (edf) in both cases were 1, plus p=0.6, meaning that a linear term is better fitted to this data than a non-linear term.   
+The estimated degrees of freedom (edf) in both cases were 1, plus p=0.6, meaning that a linear term is better fitted to this data than a non-linear term.
 
 ```{r}
-spearman <- cor.test(spo2_VPO,hb,method="spearman",exact=FALSE)
+spearman <- cor.test(spo2_VPO,hb,
+                     method="spearman",
+                     exact=FALSE
+                     )
 spearman
 ```
 
 > SpO2 and hemoglobin were not correlated (rho= `r round(spearman$estimate,3)`, p=`r round(spearman$p.value,3)`).
 
-```{r, include=FALSE}
-rm(spearman,model)
+```{r}
+#| include: false
+rm(spearman, model)
 ```
 
+### Sex and sleep apnea
 
-### Sex and sleep apnea   
+Mean expected frequency:
 
-Mean expected frequency:  
 ```{r}
 mean_exp <- data %>% 
-  drop_na(sex,sleep_apnea) %>%
-  summarize(mean_expected_freq = n()/(nlevels(sex)*nlevels(sleep_apnea)))
+  drop_na(sex, sleep_apnea) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sex)*nlevels(sleep_apnea))
+    )
 
 mean_exp
 ```
+
 Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
 
+Frequencies:
+
 ```{r}
-freq <- table(sex, sleep_apnea)
-freq
-round(prop.table(freq),4)
+frequencies <- table(sex, sleep_apnea)
+frequencies
 ```
 
-Mosaic Plot  
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
 ```{r, fig.height=3, fig.width=5}
-ggplot(data = data) +
-  geom_mosaic(aes(x = product(sex,sleep_apnea), fill=sex),na.rm = TRUE) +
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,sleep_apnea),
+        fill=sex),
+    na.rm = TRUE
+    ) +
   scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "Sleep apnea"
+  ) +
   theme_mosaic() 
 ```
 
 ```{r}
-chi <- chisq.test(freq, correct=FALSE)
+chi <- chisq.test(frequencies, correct=FALSE)
 chi
 ```
 
-Percentage by level (women, men):  
 ```{r}
-round(prop.table(freq,1),4)*100
+#| include: false 
+rm(mean_exp,frequencies, chi)
 ```
 
-```{r, include=FALSE}
-rm(mean_exp,freq, chi)
+> Sex was associated with OSA (p<0.001) as men had the diagnosis more frequently compared to women.
+
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+detach(data)
+
+rm(data, figfolder)
+
+pacman::p_unload(negate = TRUE)
 ```
-
-> Sex was associated with OSA (p<0.001) as men had the diagnosis more frequently compared to women. 
-
-     

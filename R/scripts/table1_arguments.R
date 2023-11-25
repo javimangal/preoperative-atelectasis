@@ -1,5 +1,3 @@
-
-
 # Group variables by distribution:
 normal <- c(
   "age",
@@ -111,7 +109,8 @@ table1 <- table1(
 )
 
 # Save as html:
-t1flex(table1) %>% save_as_html(path = paste(tabfolder, "/Table1.html", sep = ""))
+t1flex(table1) %>% 
+  save_as_html(path = paste0(tabfolder, "/Table1.html"))
 
 # Save as word document:
 properties <- prop_section(

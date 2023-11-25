@@ -824,9 +824,18 @@ round(prop.table(freq),4)
 
 Mosaic Plot  
 ```{r, fig.height=3, fig.width=5}
-ggplot(data = data) +
-  geom_mosaic(aes(x = product(sex,sleep_apnea), fill=sex),na.rm = TRUE) +
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,sleep_apnea),
+        fill=sex),
+    na.rm = TRUE
+    ) +
   scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "Sleep apnea"
+  ) +
   theme_mosaic() 
 ```
 
