@@ -45,7 +45,7 @@ dir.create(psfolder, showWarnings = FALSE)
 dir.create(reports, showWarnings = FALSE)
 ```
 
-##### Session and package dependencies   
+##### Session and package dependencies
 
 ```{r}
 #| echo: false  
@@ -81,7 +81,6 @@ data <- get_dataframe_by_name(
 # Recode variables  
 source("scripts/variable_names_raw.R", local = knitr::knit_global())
 ```
-
 
 ```{r}
 #| include: false  

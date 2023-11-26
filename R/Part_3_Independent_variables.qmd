@@ -939,7 +939,7 @@ chi
 rm(mean_exp,frequencies, chi)
 ```
 
-> Sex was associated with OSA (p<0.001) as men had the diagnosis more frequently compared to women.
+> Sex was associated with OSA (p\<0.001) as men had the diagnosis more frequently compared to women.
 
 ```{r}
 #| include: false

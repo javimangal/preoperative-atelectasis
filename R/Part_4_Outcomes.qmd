@@ -18,9 +18,10 @@ format:
 editor: visual
 ---
 
-# Setup 
+# Setup
 
-#### Packages used   
+#### Packages used
+
 ```{r}
 #| echo: true
 if (!require("pacman", quietly = TRUE)) {
@@ -34,8 +35,6 @@ pacman::p_load(
   RColorBrewer, #Color palettes for data visualization. 
   gridExtra, #Used to arrange multiple ggplots in a grid.  
   grid, #Used to arrange multiple ggplots in a grid.
-  flextable, #Used to export tables.  
-  officer,  #Used to export tables.
   mgcv, #Used to model non-linear relationships with a general additive model.  
   ggmosaic, #Used to create mosaic plots.   
   car, #Used assess distribution of continuous variables (stacked Q-Q plots).
@@ -44,8 +43,8 @@ pacman::p_load(
 )
 ```
 
+##### Session and package dependencies
 
-##### Session and package dependencies     
 ```{r}
 # Credits chunk of code: Alex Bossers, Utrecht University (a.bossers@uu.nl)
 
@@ -66,17 +65,20 @@ rm(session)
 
 ```
 
+Set seed (for reproducibility of bootstrapping) as the current year 2023:
+
+```{r}
+#| echo: true
+set.seed(2023)
+```
 
 ```{r}
 #| include: false
 
 # Create directories for sub-folders 
 figfolder <- "../results/output_figures"
-tabfolder <- "../results/output_tables"
 dir.create(figfolder, showWarnings = FALSE)
-dir.create(tabfolder, showWarnings = FALSE)
 ```
-
 
 ```{r}
 #| include: false
@@ -90,7 +92,7 @@ source("scripts/variable_names.R")
 
 ```
 
-# Outcome variable  
+# Outcome variable
 
 ```{r}
 #| include: false
@@ -98,37 +100,42 @@ source("scripts/variable_names.R")
 attach(data)
 ```
 
-Corroborate that atelectasis(Yes/No) matches atelectasis percent equal or different to 0%:   
+Corroborate that atelectasis(Yes/No) matches atelectasis percent equal or different to 0%:
+
 ```{r}
 table(atelectasis,atelectasis_percent)
 ```
-Yes, these do match.   
 
-## Prevalence of atelectasis  
+Yes, these do match.
+
+## Prevalence of atelectasis
+
 ```{r}
 frequencies <- table(atelectasis)
 percent <- round((prop.table(frequencies)*100),1)
 total <- rbind(frequencies,percent)
 total
 ```
-   
-Prevalence of atelectasis with 95% confidence interval   
+
+Prevalence of atelectasis with 95% confidence interval
+
 ```{r}
 prev_atelectasis <- prop.test(frequencies, correct=FALSE)
 confint <- round((prev_atelectasis$conf.int*100),2)
 prev_atelectasis
 ```
 
-> The prevalence of atelectasis was **`r percent[1]` (95%CI: `r confint`)**.   
-   
+> The prevalence of atelectasis was **`r percent[1]` (95%CI: `r confint`)**.
+
 ```{r}
 #| include: false
 rm(frequencies, percent, prev_atelectasis, total, confint)
 ```
 
-## Atelectasis - obesity class    
+## Atelectasis - obesity class
 
-Mean expected frequency:  
+Mean expected frequency:
+
 ```{r}
 mean_exp <- data %>% 
   drop_na(type_obesity, atelectasis) %>% 
@@ -137,18 +144,21 @@ mean_exp <- data %>%
 mean_exp
 ```
 
-Frequencies:  
+Frequencies:
+
 ```{r}
 frequencies <- table(type_obesity, atelectasis)
 frequencies
 ```
 
-Percentage:  
+Percentage:
+
 ```{r}
 round(prop.table(frequencies,1),4)*100
 ```
 
-Mosaic Plot  
+Mosaic Plot
+
 ```{r, fig.height=3, fig.width=5}
 data %>% 
   mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
@@ -176,10 +186,10 @@ chi
 rm(mean_exp,frequencies, chi)
 ```
 
+#### Atelectasis location by obesity class
 
-#### Atelectasis location by obesity class   
+Mean expected frequency:
 
-Mean expected frequency:  
 ```{r}
 mean_exp <- data %>% 
   drop_na(type_obesity, atelectasis_location) %>% 
@@ -188,20 +198,23 @@ mean_exp <- data %>%
 mean_exp
 ```
 
-Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.  
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
 
-Frequencies:   
+Frequencies:
+
 ```{r}
 frequencies <- table(type_obesity, atelectasis_location)
 frequencies
 ```
 
-Percentage:   
+Percentage:
+
 ```{r}
 round(prop.table(frequencies,1),4)*100
 ```
 
-Mosaic Plot  
+Mosaic Plot
+
 ```{r, fig.height=3, fig.width=5}
 ggplot(data = data) +
   geom_mosaic(
@@ -222,8 +235,7 @@ chi <- chisq.test(frequencies, correct=FALSE)
 chi
 ```
 
-Prevalence of atelectasis with 95% confidence intervals calculated with 
-sourced script ***Prevalence_atelectasis.R***
+Prevalence of atelectasis with 95% confidence intervals calculated with sourced script ***Prevalence_atelectasis.R***
 
 ```{r}
 #| include: false
@@ -231,18 +243,16 @@ sourced script ***Prevalence_atelectasis.R***
 source("scripts/Prevalence_atelectasis.R", local = knitr::knit_global())
 ```
 
+> The prevalence of atelectasis was greater in higher obesity classes: class 1, n=`r atelectasis$n[3]` (`r atelectasis$prev[3]`%, 95%CI:`r atelectasis$confint[3]`); class 2, n=`r atelectasis$n[5]` (`r atelectasis$prev[5]`%, 95%CI:`r atelectasis$confint[5]`); and class 3, n=`r atelectasis$n[7]` (`r atelectasis$prev[7]`%, 95%CI:`r atelectasis$confint[7]`) (p\<0.001).
 
-> The prevalence of atelectasis was greater in higher obesity classes: class 1, n=`r atelectasis$n[3]` (`r atelectasis$prev[3]`%, 95%CI:`r atelectasis$confint[3]`); class 2, n=`r atelectasis$n[5]` (`r atelectasis$prev[5]`%, 95%CI:`r atelectasis$confint[5]`); and class 3, n=`r atelectasis$n[7]` (`r atelectasis$prev[7]`%, 95%CI:`r atelectasis$confint[7]`) (p<0.001). 
-
-> Of those who had atelectasis, the most frequent presentation was unilateral n=`r atelectasis$Unilateral[1]`, compared to bilateral n=`r atelectasis$Bilateral[1]`. When examining this by obesity class, the observed distribution was not significantly different for those with class 1, 2, and 3 obesity categories (n=`r atelectasis$Unilateral[3]`, n=`r atelectasis$Unilateral[5]`, and n=`r atelectasis$Unilateral[7]`, respectively) (p=`r round(chi$p.value,3)`).  
+> Of those who had atelectasis, the most frequent presentation was unilateral n=`r atelectasis$Unilateral[1]`, compared to bilateral n=`r atelectasis$Bilateral[1]`. When examining this by obesity class, the observed distribution was not significantly different for those with class 1, 2, and 3 obesity categories (n=`r atelectasis$Unilateral[3]`, n=`r atelectasis$Unilateral[5]`, and n=`r atelectasis$Unilateral[7]`, respectively) (p=`r round(chi$p.value,3)`).
 
 ```{r}
 #| include: false 
 rm(mean_exp, frequencies, chi, location, atelectasis_obesity, atelectasis_total, atelectasis_total_location, atelectasis_obesity_location, atelectasis)
 ```
 
-
-#### Atelectasis Percent  
+#### Atelectasis Percent
 
 ```{r}
 #| include: false 
@@ -257,7 +267,6 @@ data %>%
 
 ```
 
- 
 ```{r}
 #| include: false 
 ## Change 'false' for 'true' above to show plot. 
@@ -272,10 +281,10 @@ data %>%
 
 ```
 
+##### Mean atelectasis percentage
 
-##### Mean atelectasis percentage  
+The following would be the mean atelectasis percentage coverage if a normal distribution were assumed, which is what has been done in some prior studies:
 
-The following would be the mean atelectasis percentage coverage if a normal distribution were assumed, which is what has been done in some prior studies:   
 ```{r}
 data %>%  summarize(
     mean = mean(atelectasis_percent),
@@ -283,7 +292,8 @@ data %>%  summarize(
   ) 
 ```
 
-And by obesity class:   
+And by obesity class:
+
 ```{r}
 data %>% group_by(type_obesity) %>%
   summarize(
@@ -292,55 +302,82 @@ data %>% group_by(type_obesity) %>%
   ) 
 ```
 
-As is evident from these numbers, assuming normality causes standard deviation to capture negative values, which is impossible in reality for this variable.   
+As is evident from these numbers, assuming normality causes standard deviation to capture negative values, which is impossible in reality for this variable.
 
-Thus, bootstrapping the mean and 95%CI is expected to lead to more appropriate estimates.  
+Thus, bootstrapping the mean and 95%CI is expected to lead to more appropriate estimates.
 
-Mean by bootstrapping for the total sample:   
+Mean by bootstrapping for the total sample:
+
 ```{r}
 boot_atel <- one.boot(data$atelectasis_percent, mean, R=10000)
 mean_boot <- mean(boot_atel$t)
 mean_boot
 ```
 
-Bootstrap 95% confidence intervals:   
+Bootstrap 95% confidence intervals:
+
 ```{r}
 boot_ci <- boot.ci(boot_atel)
 boot_ci
 ```
 
-The bias-corrected and accelerated (BCa) bootstrap interval is known to lead to more stable intervals with better coverage. Will report this. However, it is a good thing that here 95%CI through different methods do not lead to widely different results.  
+The bias-corrected and accelerated (BCa) bootstrap interval is known to lead to more stable intervals with better coverage. Will report this. However, it is a good thing that here 95%CI through different methods do not lead to widely different results.
 
-Now, I will calculate this for different BMI categories:   
+Now, I will calculate this for different BMI categories:
+
 ```{r}
 data_class_1 <- data %>% filter(type_obesity=="Class 1 Obesity") 
 data_class_2 <- data %>% filter(type_obesity=="Class 2 Obesity") 
 data_class_3 <- data %>% filter(type_obesity=="Class 3 Obesity") 
 ```
 
-Class 1:   
+###### Class 1
+
+Mean:
+
 ```{r}
 boot_class1 <- one.boot(data_class_1$atelectasis_percent, mean, R=10000)
 mean_boot_class1 <- mean(boot_class1$t)
 mean_boot_class1
+```
+
+95% CI:
+
+```{r}
 boot_ci_class1 <- boot.ci(boot_class1)
 boot_ci_class1
 ```
 
-Class 2:   
+###### Class 2
+
+Mean:
+
 ```{r}
 boot_class2 <- one.boot(data_class_2$atelectasis_percent, mean, R=10000)
 mean_boot_class2 <- mean(boot_class2$t)
 mean_boot_class2
+```
+
+95% CI:
+
+```{r}
 boot_ci_class2 <- boot.ci(boot_class2)
 boot_ci_class2
 ```
 
-Class 3:   
+###### Class 3
+
+Mean:
+
 ```{r}
 boot_class3 <- one.boot(data_class_3$atelectasis_percent, mean, R=10000)
 mean_boot_class3 <- mean(boot_class3$t)
 mean_boot_class3
+```
+
+95% CI:
+
+```{r}
 boot_ci_class3 <- boot.ci(boot_class3)
 boot_ci_class3
 ```
@@ -352,11 +389,12 @@ boot_ci_class3
 rm(boot_atel,mean_boot,boot_ci,data_class_1,data_class_2,data_class_3,boot_class1,mean_boot_class1,boot_ci_class1,boot_class2,mean_boot_class2,boot_ci_class2,boot_class3,mean_boot_class3,boot_ci_class3)
 ```
 
-##### Atelectasis percentage by obesity class   
+##### Atelectasis percentage by obesity class
 
-Now, I will continue assessing atelectasis percentage if assumed to be categorical ordinal:      
-   
-Mean expected frequency:  
+Now, I will continue assessing atelectasis percentage if assumed to be categorical ordinal:
+
+Mean expected frequency:
+
 ```{r}
 mean_exp <- data %>% 
   mutate(
@@ -367,21 +405,24 @@ mean_exp <- data %>%
 mean_exp
 ```
 
-Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.  
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
 
-Frequencies:   
+Frequencies:
+
 ```{r}
 frequencies <- table(atelectasis_percent,type_obesity)
 frequencies
 ```
 
-Percentage by obesity class   
+Percentage by obesity class
+
 ```{r}
 prop_fig2a <- prop.table(frequencies,margin=2)
 round(prop_fig2a*100,2)
 ```
 
-Barplot of absolute frequencies:   
+Barplot of absolute frequencies:
+
 ```{r}
 barplot(frequencies,beside=TRUE)
 ```
@@ -391,16 +432,16 @@ chi <- chisq.test(frequencies, correct=FALSE)
 chi
 ```
 
+##### Barplot of atelectasis percentage by obesity class category
 
-##### Barplot of atelectasis percentage by obesity class category   
-```{r}
+```{r, fig.height=5, fig.width=8}
 barplot(prop_fig2a,beside=TRUE,ylim=c(0,1),ylab="Relative frequency",
         col=brewer.pal(9,"Blues"),
         legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%","27.5%"),
         space = c(0.2, 1.5)
         )
 Figure2a <- recordPlot()
-```    
+```
 
 ```{r}
 #| include: false
@@ -409,13 +450,12 @@ Figure2a
 dev.off
 ```
 
-
 ```{r}
 #| include: false
 rm(mean_exp,frequencies,percent,frequencies,chi,Figure2a,prop_fig2a)
 ```
 
-##### Smooth term?   
+##### Smooth term?
 
 ```{r}
 plot(atelectasis_percent~BMI, 
@@ -425,7 +465,7 @@ plot(atelectasis_percent~BMI,
      )
 ```
 
-Atelectasis percent seems to increase as BMI increases. However, relationship is not linear.                
+Atelectasis percent seems to increase as BMI increases. However, relationship is not linear.
 
 ```{r}
 #| include: false 
@@ -447,9 +487,7 @@ ggplot(data, aes(BMI,atelectasis_percent)) +
         )
 ```
 
-
-Models evaluated with the accompanying sourced script 
-***nonlinear_BMI_Atelectasis.R***
+Models evaluated with the accompanying sourced script ***nonlinear_BMI_Atelectasis.R***
 
 ```{r}
 #| include: false
@@ -457,31 +495,34 @@ Models evaluated with the accompanying sourced script
 source("scripts/nonlinear_BMI_Atelectasis.R", local = knitr::knit_global())
 ```
 
-All models are significantly better than linear. Thus, using a smooth term for BMI to predict atelectasis percent is better than modelling a linear relationship.   
+All models are significantly better than linear. Thus, using a smooth term for BMI to predict atelectasis percent is better than modelling a linear relationship.
 
-Best AIC:  
+Best AIC:
+
 ```{r}
 #| echo: true
 list(AIC_k2,AIC_k4,AIC_k6,AIC_k8)
 ```
 
-Regarding AIC, greatest improvement in AIC is k=6. Will model with k=5 and k=7 to compare      
+Regarding AIC, greatest improvement in AIC is k=6. Will model with k=5 and k=7 to compare
 
-Best AIC:  
+Best AIC:
+
 ```{r}
 #| echo: true
 list(AIC_k5,AIC_k6,AIC_k7)
 ```
 
-k=6 offers the lowest AIC. Will keep k=6 to model.      
+k=6 offers the lowest AIC. Will keep k=6 to model.
 
 ```{r}
 fig1a
 ```
-   
-Positive non-monotonic relationship since atelectasis increases as BMI increases only after ~BMI equal to 42.    
 
-Will assess Spearman's correlation again only to have a rough idea (will not report this in the paper since the relationship is not monotonic):    
+Positive non-monotonic relationship since atelectasis increases as BMI increases only after \~BMI equal to 42.
+
+Will assess Spearman's correlation again only to have a rough idea (will not report this in the paper since the relationship is not monotonic):
+
 ```{r}
 spearman <- cor.test(spo2_VPO,atelectasis_percent,
                      method="spearman",
@@ -490,19 +531,18 @@ spearman <- cor.test(spo2_VPO,atelectasis_percent,
 spearman
 ```
 
-> Atelectasis percent exhibited a negative non-linear non-monotonic relationship with SpO2 (**Figure 1A**, rho= `r round(spearman$estimate,3)`, p<0.001).
+> Atelectasis percent exhibited a negative non-linear non-monotonic relationship with SpO2 (**Figure 1A**, rho= `r round(spearman$estimate,3)`, p\<0.001).
 
-Note that this p-value refers to the smooth term vs linear as assessed in GAM models.   
+Note that this p-value refers to the smooth term vs linear as assessed in GAM models.
 
-Interestingly, this figure is almost a mirror image of the priorly created plot for SpO2 ~ BMI.   
+Interestingly, this figure is almost a mirror image of the priorly created plot for SpO2 \~ BMI.
 
 ```{r}
 #| include: false
 rm(AIC_k2,AIC_k3,AIC_k4,AIC_k5,AIC_k6,AIC_k7,AIC_k8,AIC_k10,model,spearman,fig1a)
 ```
 
-
-## Atelectasis - age   
+## Atelectasis - age
 
 ```{r}
 boxplot(age~atelectasis,
@@ -511,14 +551,14 @@ boxplot(age~atelectasis,
         )
 ```
 
-Assess distribution of age by atelectasis (yes/no):    
+Assess distribution of age by atelectasis (yes/no):
 
 ```{r}
 data_age <- data %>% group_by(atelectasis)
 ```
 
 ```{r}
-#| include: false 
+#| include: false
 ## Change 'false' for 'true' above to show plot. 
 
 #Assess distribution of age by atelectasis (yes/no):   
@@ -534,7 +574,8 @@ ggplot(data_age,aes(x = age)) +
 qqPlot(age ~ atelectasis, data=data_age)
 ```
 
-Distribution near-normal, will assess mean and variance for further testing:  
+Distribution near-normal, will assess mean and variance for further testing:
+
 ```{r}
 mean_age <- data_age %>% 
   summarise(n=n(),
@@ -543,26 +584,26 @@ mean_age <- data_age %>%
             variance = var(age)
             )
 mean_age
-```  
+```
 
-Variances near-similar, but group sizes differ. Welch's t-test more suitable:    
+Variances near-similar, but group sizes differ. Welch's t-test more suitable:
 
 ```{r}
 t_test <- t.test(age ~ atelectasis, data = data_age)
 t_test
 ```
 
-> Age was similarly distributed among patients without atelectasis (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those with atelectasis (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`). 
+> Age was similarly distributed among patients without atelectasis (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those with atelectasis (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_age,mean_age,t_test)
 ```
 
+## Atelectasis - sex
 
+Mean expected frequency:
 
-## Atelectasis - sex   
-
-Mean expected frequency:  
 ```{r}
 mean_exp <- data %>% 
   drop_na(sex, atelectasis) %>% 
@@ -571,21 +612,24 @@ mean_exp <- data %>%
 mean_exp
 ```
 
-Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.   
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
 
-Frequencies:   
+Frequencies:
+
 ```{r}
 frequencies <- table(sex, atelectasis)
 frequencies
 ```
 
-Percentage:   
+Percentage:
+
 ```{r}
 percent <- round((prop.table(frequencies, 1)*100),2)
 percent
 ```
 
-Mosaic Plot  
+Mosaic Plot
+
 ```{r, fig.height=3, fig.width=5}
 data %>% 
   mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
@@ -609,16 +653,17 @@ chi <- chisq.test(frequencies, correct=FALSE)
 chi
 ```
 
-> There were no significant differences in atelectasis ocurrence between men (`r round(percent[2,1],1)`%) and women (`r round(percent[1,1],1)`%) (p=`r round(chi$p.value,3)`). 
+> There were no significant differences in atelectasis ocurrence between men (`r round(percent[2,1],1)`%) and women (`r round(percent[1,1],1)`%) (p=`r round(chi$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(mean_exp,frequencies,percent,chi)
 ```
 
+## Atelectasis - OSA
 
-## Atelectasis - OSA   
+Mean expected frequency:
 
-Mean expected frequency:  
 ```{r}
 mean_exp <- data %>% 
   drop_na(sleep_apnea, atelectasis) %>% 
@@ -627,22 +672,24 @@ mean_exp <- data %>%
 mean_exp
 ```
 
-Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.   
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
 
-Frequencies:   
+Frequencies:
+
 ```{r}
 frequencies <- table(sleep_apnea, atelectasis)
 frequencies
 ```
 
-Percentage:   
+Percentage:
+
 ```{r}
 percent <- round((prop.table(frequencies, 1)*100),2)
 percent
 ```
 
+Mosaic Plot
 
-Mosaic Plot  
 ```{r, fig.height=3, fig.width=5}
 data %>% 
   mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
@@ -666,16 +713,17 @@ chi <- chisq.test(frequencies, correct=FALSE)
 chi
 ```
 
-> Patients with a diagnosis of obstructive sleep apnea had atelectasis more frequently (`r round(percent[2,1],1)`%) than those without the diagnosis (`r round(percent[1,1],1)`%) (p<0.001). 
+> Patients with a diagnosis of obstructive sleep apnea had atelectasis more frequently (`r round(percent[2,1],1)`%) than those without the diagnosis (`r round(percent[1,1],1)`%) (p\<0.001).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(mean_exp,frequencies, percent, chi)
 ```
 
+#### Atelectasis location by OSA
 
-#### Atelectasis location by OSA   
+Mean expected frequency:
 
-Mean expected frequency:  
 ```{r}
 mean_exp <- data %>% 
   drop_na(sleep_apnea, atelectasis_location) %>% 
@@ -684,21 +732,24 @@ mean_exp <- data %>%
 mean_exp
 ```
 
-Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.   
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
 
-Frequencies:  
+Frequencies:
+
 ```{r}
 frequencies <- table(sleep_apnea, atelectasis_location)
 frequencies
 ```
 
-Percentage:   
+Percentage:
+
 ```{r}
 percent <- round((prop.table(frequencies, 1)*100),2)
 percent
 ```
 
-Mosaic Plot  
+Mosaic Plot
+
 ```{r, fig.height=3, fig.width=5}
 ggplot(data = data) +
   geom_mosaic(aes(
@@ -714,7 +765,6 @@ ggplot(data = data) +
   theme_mosaic() 
 ```
 
-
 ```{r}
 chi <- chisq.test(frequencies, correct=FALSE)
 chi
@@ -722,13 +772,12 @@ chi
 
 > The location of atelectasis was not different among patients with and without OSA (p=`r round(chi$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(mean_exp,frequencies, percent, chi)
 ```
 
-
-
-## Atelectasis - SpO2  
+## Atelectasis - SpO2
 
 ```{r}
 data_spo2 <- data %>% group_by(atelectasis) 
@@ -750,7 +799,7 @@ boxplot(spo2_VPO ~ atelectasis,
         )
 ```
 
-Distribution not normal and influential outliers. Will assess non-parametrically.  
+Distribution not normal and influential outliers. Will assess non-parametrically.
 
 ```{r}
 wil <- wilcox.test(spo2_VPO ~ atelectasis, 
@@ -760,13 +809,14 @@ wil <- wilcox.test(spo2_VPO ~ atelectasis,
 wil
 ```
 
-> The median SpO2 was significantly lower in patients with atelectasis (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) compared to those without (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) (p<0.001).  
+> The median SpO2 was significantly lower in patients with atelectasis (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) compared to those without (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) (p\<0.001).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_spo2,median_spo2,wil)
 ```
 
-## Atelectasis location - SpO2  
+## Atelectasis location - SpO2
 
 ```{r}
 data_spo2 <- data %>% 
@@ -790,7 +840,7 @@ boxplot(spo2_VPO ~ atelectasis_location,
         )
 ```
 
-Distribution not normal and influential outliers. Will assess non-parametrically.  
+Distribution not normal and likely influential outliers. Will assess non-parametrically.
 
 ```{r}
 wil <- wilcox.test(spo2_VPO ~ atelectasis_location, 
@@ -800,17 +850,19 @@ wil <- wilcox.test(spo2_VPO ~ atelectasis_location,
 wil
 ```
 
-> The median SpO2 was significantly lower in patients with bilateral atelectasis (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those with unilateral atelectasis (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).  
+> The median SpO2 was significantly lower in patients with bilateral atelectasis (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those with unilateral atelectasis (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_spo2,median_spo2,wil)
 ```
 
+## Atelectasis percent - SpO2
 
-## Atelectasis percent - SpO2   
+### Smooth term?
 
-### Smooth term?   
-Scatterplot  
+Scatterplot
+
 ```{r}
 plot(spo2_VPO~atelectasis_percent, data=data, 
      main="Scatterplot", 
@@ -818,9 +870,10 @@ plot(spo2_VPO~atelectasis_percent, data=data,
      ylab="SpO2 (%)")
 ```
 
-Decreasing SpO2 as atelectasis percent increases.             
+Decreasing SpO2 as atelectasis percent increases.
 
-Would a smooth term be more useful to model SpO2?   
+Would a smooth term be more useful to model SpO2?
+
 ```{r}
 #| include: false 
 ## Change 'false' for 'true' above to show plot. 
@@ -842,8 +895,7 @@ ggplot(data, aes(atelectasis_percent,spo2_VPO)) +
         )
 ```
 
-Models evaluated with the accompanying sourced script 
-***nonlinear_Atelectasis_SpO2.R***
+Models evaluated with the accompanying sourced script ***nonlinear_Atelectasis_SpO2.R***
 
 ```{r}
 #| include: false
@@ -851,28 +903,30 @@ Models evaluated with the accompanying sourced script
 source("scripts/nonlinear_Atelectasis_SpO2.R", local = knitr::knit_global())
 ```
 
+All models are significantly better than linear. Thus, using a smooth term for atelectasis percent is better than modelling a linear relationship.
 
-All models are significantly better than linear. Thus, using a smooth term for atelectasis percent is better than modelling a linear relationship.   
+Best AIC:
 
-Best AIC:  
 ```{r}
 list(AIC_k2,AIC_k4,AIC_k6,AIC_k8)
 ```
 
-Regarding AIC, no model offers greater improvement in AIC than k=6. Will try a model with k=5.   
+Regarding AIC, no model offers greater improvement in AIC than k=6. Will try a model with k=5.
 
-Best AIC:  
+Best AIC:
+
 ```{r}
 list(AIC_k4,AIC_k5,AIC_k6)
 ```
 
-There is a drop in AIC for k=5, which also offers the best k-index. Nonetheless, one problem with this is that the extra knot is explaining a clump around 12.%, for which there was only one single observation. Thus, it is likely that this clump and additional knot is only explaining noise in the data, and would thus not be a good representation of the trend in the variable. Thus, will keep k=4 to model as this model offers the best visual representation of the trend in all categories.          
+There is a drop in AIC for k=5, which also offers the best k-index. Nonetheless, one problem with this is that the extra knot is explaining a clump around 12.%, for which there was only one single observation. Thus, it is likely that this clump and additional knot is only explaining noise in the data, and would thus not be a good representation of the trend in the variable. Thus, will keep k=4 to model as this model offers the best visual representation of the trend in all categories.
 
 ```{r}
 fig1c
 ```
-   
-Negative monotonic relationship since SpO2 decreases as BMI increases. Will assess Spearman's correlation coefficient to report in paper:    
+
+Negative monotonic relationship since SpO2 decreases as BMI increases. Will assess Spearman's correlation coefficient to report in paper:
+
 ```{r}
 spearman <- cor.test(spo2_VPO,atelectasis_percent,
                      method="spearman",
@@ -881,65 +935,64 @@ spearman <- cor.test(spo2_VPO,atelectasis_percent,
 spearman
 ```
 
-> Atelectasis percent exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1C**, rho= `r round(spearman$estimate,3)`, p<0.001).
+> Atelectasis percent exhibited a negative non-linear monotonic relationship with SpO2 (**Figure 1C**, rho= `r round(spearman$estimate,3)`, p\<0.001).
 
-##### Figure 1c    
+### Figure 1
+
+Created with the accompanying sourced script ***Figure1.R***
+
 ```{r}
-ggsave("Figure1c.png",plot=fig1c,
-       path=figfolder, 
-       width = 8,  height = 6, units = "in", 
-       dpi = 300)
+#| include: false
+
+source("scripts/Figure1.R", local = knitr::knit_global())
 ```
 
-#### Figure 1   
-```{r}
-blank_plot = ggplotGrob(ggplot(NULL)); 
-blank_plot$grobs[[max(which(blank_plot$layout$name == "panel"))]] = nullGrob(); 
-grid.draw(blank_plot)
-
-figure1 <- grid.arrange(fig1a, blank_plot, fig1b, fig1c, ncol=2)
+```{r, fig.height=8, fig.width=10}
+grid.arrange(fig1a, blank_plot, fig1b, fig1c, ncol=2)
 ```
 
-Save figure:   
 ```{r}
-ggsave("Figure1.png",plot=figure1,
-       path=figfolder, 
-       width = 12,  height = 10, units = "in", 
-       dpi = 300)
-```
-
-
-```{r, include=FALSE}
+#| include: false
 rm(AIC_k2,AIC_k4,AIC_k5,AIC_k6,AIC_k8,model,spearman,figure1,fig1a,fig1b,fig1c,blank_plot)
 ```
 
-```{r, include=FALSE}
+```{r}
+#| include: false
 detach(data)
 ```
 
-### Ordinal variable  
+### Ordinal variable
 
-Since there is only one participant in the 30% category, will collapse with the 20 category for further analyses:   
+Since there is only one participant in the 30% category, will collapse with the 20 category for further analyses:
+
 ```{r}
 datamodel <- data
-datamodel$atelectasis_percent <- factor(datamodel$atelectasis_percent, 
-                                        levels=c(0,2.5,5,7.5,10,12.5,15,17.5,27.5)) %>% 
+datamodel$atelectasis_percent <- factor(
+  datamodel$atelectasis_percent,
+  levels=c(0,2.5,5,7.5,10,12.5,15,17.5,27.5)
+  ) %>% 
   fct_collapse("17.5%" = c(17.5,27.5)) %>% 
   factor(labels = c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%"))
 
 table(datamodel$atelectasis_percent)
 ```
 
-Assess distribution of SpO2 by atelectasis percent categories:    
 ```{r}
+#| include: false 
 data_spo2 <- datamodel %>% group_by(atelectasis_percent)
+```
 
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+# Assess distribution of SpO2 by atelectasis percent categories: 
 ggplot(data_spo2,aes(x = spo2_VPO)) +
   geom_histogram(fill = "aquamarine", colour = "black") +
   facet_grid(atelectasis_percent ~ .)
 ```
 
-Distribution not normal, group sizes are different and there are outliers in both directions, depending where you are located. Thus, will proceed with non-parametric assessment:   
+Distribution not normal, group sizes are different and there are outliers in both directions, depending where you are located. Thus, will proceed with non-parametric assessment:
 
 ```{r}
 median_spo2 <- data_spo2 %>% 
@@ -958,7 +1011,7 @@ krus <- kruskal.test(spo2_VPO ~ atelectasis_percent, data = data_spo2)
 krus
 ```
 
-> There was a decreasing trend in median SpO2 with higher atelectasis percentage extension (p<0.001).   
+> There was a decreasing trend in median SpO2 with higher atelectasis percentage extension (p\<0.001).
 
 ```{r}
 ggplot(datamodel, aes(x = atelectasis_percent, y = spo2_VPO)) + 
@@ -981,28 +1034,61 @@ ggplot(datamodel, aes(x = atelectasis_percent, y = spo2_VPO)) +
         )
 ```
 
-```{r, include=FALSE}
+```{r}
+#| include: false 
 rm(data_spo2,median_spo2,krus) 
 ```
 
+## Relationship between OSA, obesity type and atelectasis percent:
 
-## Relationship between OSA, obesity type and atelectasis percent:   
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show table 
+
+# This also gives an idea of which sizes to use for next plot: 
+datamodel %>% 
+  group_by(atelectasis_percent, sleep_apnea, type_obesity) %>% 
+  summarize(
+    n = n()
+  )
+```
 
 ```{r}
 datamodel %>% mutate(
-  type_obesity=fct_recode(type_obesity, 
-                          "1"="Class 1 Obesity", 
-                          "2"="Class 2 Obesity", 
-                          "3"="Class 3 Obesity")) %>% 
+  type_obesity = fct_recode(
+    type_obesity,
+    "1" = "Class 1 Obesity",
+    "2" = "Class 2 Obesity",
+    "3" = "Class 3 Obesity"
+    )
+  ) %>% 
   count(type_obesity, sleep_apnea, atelectasis_percent) %>%
-  ggplot(aes(x = sleep_apnea, y = atelectasis_percent, color = sleep_apnea)) +
+  ggplot(
+    aes(x = sleep_apnea,
+        y = atelectasis_percent,
+        color = sleep_apnea)
+    ) +
   geom_point(aes(group = sleep_apnea, size = n)) +
   scale_color_manual(values=c("gray40","darkred")) +
   facet_wrap(~type_obesity, scales = "free_x",
-             labeller = labeller(type_obesity = label_both)) +
-  scale_size(breaks = c(1, 10, 20, 30, 40, 50, 60)) + 
+             labeller = labeller(type_obesity = label_both)
+             ) +
+  scale_size(breaks = c(1, 5, 10, 20, 30, 40, 50, 60)) + 
+  labs(
+    y = "Atelectasis percent",
+    x = "Obstructive sleep apnea"
+  ) +
   theme_light()
 ```
 
-Sleep apnea was more common with higher BMI categories and also with higher atelectasis percentage. Atelectasis percent increases at higher obesity classes.   
+Sleep apnea was more common with higher BMI categories and also with higher atelectasis percentage. Atelectasis percent increases at higher obesity classes.
 
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+rm(data, datamodel, figfolder)
+
+pacman::p_unload(negate = TRUE)
+```

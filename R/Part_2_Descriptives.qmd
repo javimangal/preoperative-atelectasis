@@ -17,9 +17,10 @@ format:
 editor: visual
 ---
 
-# Setup 
+# Setup
 
-#### Packages used   
+#### Packages used
+
 ```{r}
 if (!require("pacman", quietly = TRUE)) {
   install.packages("pacman")
@@ -56,8 +57,8 @@ remotes::install_github("ropensci/rnaturalearthhires")
 pacman::p_load(rnaturalearthhires)
 ```
 
+##### Session and package dependencies
 
-##### Session and package dependencies   
 ```{r}
 #| echo: false
 
@@ -80,7 +81,6 @@ rm(session)
 
 ```
 
-
 ```{r}
 #| include: false
 
@@ -92,7 +92,6 @@ dir.create(figfolder, showWarnings = FALSE)
 dir.create(tabfolder, showWarnings = FALSE)
 dir.create(psfolder, showWarnings = FALSE)
 ```
-
 
 ```{r}
 #| include: false
@@ -106,7 +105,7 @@ source("scripts/variable_names.R")
 
 ```
 
-# State of residence of participants  
+# State of residence of participants
 
 Map generated with the accompanying script ***Map_USA_Canada.R***
 
@@ -124,10 +123,10 @@ fig
 rm(canada, usa, fig, fig_add, figS2, table, us_laea)
 ```
 
+# Distribution of numerical variables
 
-# Distribution of numerical variables    
+Distributions were examined with the accompanying sourced function ***distribution_numerical_variables.R***
 
-Distributions were examined with the accompanying sourced function  ***distribution_numerical_variables.R***      
 ```{r, fig.height = 4, fig.width = 6}
 #| include: false
 
@@ -138,58 +137,59 @@ source("scripts/distribution_plots.R")
 distribution_plots(data)
 ```
 
-Near normal distribution:  
--   Age: light tails  
--   height: heavy right tail, 4 outliers right  
--   hb: heavy tails, bilateral outliers    
--   hct: heavy tails, bilateral outliers  
--   leu: near normal, bilateral outliers  
--   neu_absolute: heavy right tail, two right outliers  
--   linf_absolute: heavy right tail, bilateral outliers (more right)     
--   mon_absolute: heavy right tail, bilateral outliers (more right)   
--   platelets: two right outliers   
--   urea: four right outliers  
--   creatinine: three right outliers  
+Near normal distribution:\
+- Age: light tails\
+- height: heavy right tail, 4 outliers right\
+- hb: heavy tails, bilateral outliers\
+- hct: heavy tails, bilateral outliers\
+- leu: near normal, bilateral outliers\
+- neu_absolute: heavy right tail, two right outliers\
+- linf_absolute: heavy right tail, bilateral outliers (more right)\
+- mon_absolute: heavy right tail, bilateral outliers (more right)\
+- platelets: two right outliers\
+- urea: four right outliers\
+- creatinine: three right outliers
 
+Distribution not normal:\
+- Weight: right-skewed, outliers are verified observations of extreme weight.\
+- BMI: right-skewed, outliers are verified observations of extreme BMI.\
+- spo2_VPO: Left-skewed\
+- neu_percent: left-skewed\
+- linf_percent: right-skewed\
+- glucose: right-skewed\
+- mon_percent: observations around only 5 data points. Will not use this variable, only absolute monocytes will be used.\
+- altitude: distribution not clear as values are quite apart an concentrate around single states with diferring mean altitudes. Will attempt to model a smooth term or categorical term in subsequent analyses.
 
-Distribution not normal:  
--   Weight: right-skewed, outliers are verified observations of extreme weight.   
--   BMI: right-skewed, outliers are verified observations of extreme BMI.  
--   spo2_VPO: Left-skewed   
--   neu_percent: left-skewed  
--   linf_percent: right-skewed  
--   glucose: right-skewed  
--   mon_percent: observations around only 5 data points. Will not use this variable, only absolute monocytes will be used.     
--   altitude: distribution not clear as values are quite apart an concentrate around single states with diferring mean altitudes. Will attempt to model a smooth term or categorical term in subsequent analyses.         
+Outcome variable:\
+- atelectasis_percent: Zero-inflated. Would be difficult to manage as categorical ordinal due to low number of patients in some categories. Will re-assess alongside subsequent analyses to decide.
 
-Outcome variable:  
--   atelectasis_percent: Zero-inflated. Would be difficult to manage as categorical ordinal due to low number of patients in some categories. Will re-assess alongside subsequent analyses to decide.   
+# Characteristics of participants
 
+Table 1 generated with the accompanying sourced script ***table1_arguments.R***
 
-# Characteristics of participants      
-Table 1 generated with the accompanying sourced script ***table1_arguments.R***    
 ```{r}
 #| include: false
 
 source("scripts/table1_arguments.R", local = knitr::knit_global())
 ```
 
-Characteristics of participants are shown for the total sample and by obesity class category as defined by the [World Health Organization](https://www.who.int/europe/news-room/fact-sheets/item/a-healthy-lifestyle---who-recommendations):   
+Characteristics of participants are shown for the total sample and by obesity class category as defined by the [World Health Organization](https://www.who.int/europe/news-room/fact-sheets/item/a-healthy-lifestyle---who-recommendations):
 
-- Class 1, BMI [30,35) kg/m2    
-- Class 2, BMI [35,40) kg/m2     
-- Class 3, BMI >40 kg/m2     
+-   Class 1, BMI \[30,35) kg/m2\
+-   Class 2, BMI \[35,40) kg/m2\
+-   Class 3, BMI \>40 kg/m2
 
-> Characteristics of participants according to BMI class are shown in **Table 1**.  
+> Characteristics of participants according to BMI class are shown in **Table 1**.
 
-## Table 1  
+## Table 1
+
 ```{r}
 #| echo: false
 
 table1
 ```
 
-NOTE: The **ASA** physical status variable has not been included in analyses since the [updated version of ASA](https://www.asahq.org/standards-and-practice-parameters/statement-on-asa-physical-status-classification-system) consulted in October 2023 classifies obesity (30<BMI<40) as ASA 2 and obesity (BMI ≥40) as ASA 3. The distribution of frequencies of ASA~obesity class in this dataset does not match such definition. This occurred since an outdated version of ASA that did not include obesity was likely used by clinicians when writing the preoperative assessment medical note:   
+NOTE: The **ASA** physical status variable has not been included in analyses since the [updated version of ASA](https://www.asahq.org/standards-and-practice-parameters/statement-on-asa-physical-status-classification-system) consulted in October 2023 classifies obesity (30\<BMI\<40) as ASA 2 and obesity (BMI ≥40) as ASA 3. The distribution of frequencies of ASA\~obesity class in this dataset does not match such definition. This occurred since an outdated version of ASA that did not include obesity was likely used by clinicians when writing the preoperative assessment medical note:
 
 ```{r}
 #| echo: false

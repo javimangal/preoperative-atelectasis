@@ -89,3 +89,19 @@ ggsave("Figure1c.png",
        path = figfolder,
        width = 8, height = 6, units = "in", dpi = 300
 )
+
+# Figure 1 (combined panels):   
+
+### Create a blank plot to arrange figures in desired order:
+blank_plot = ggplotGrob(ggplot(NULL)); 
+blank_plot$grobs[[max(which(blank_plot$layout$name == "panel"))]] = nullGrob(); 
+grid.draw(blank_plot)
+
+### Arrange in same grid: 
+figure1 <- grid.arrange(fig1a, blank_plot, fig1b, fig1c, ncol=2)
+
+### Save figure:   
+ggsave("Figure1.png",plot=figure1,
+       path=figfolder, 
+       width = 12,  height = 10, units = "in", 
+       dpi = 300)

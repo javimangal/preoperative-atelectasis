@@ -108,10 +108,6 @@ table1 <- table1(
   footnote = c(abbreviations, abbreviations_stats)
 )
 
-# Save as html:
-t1flex(table1) %>% 
-  save_as_html(path = paste0(tabfolder, "/Table1.html"))
-
 # Save as word document:
 properties <- prop_section(
   page_size = page_size(
