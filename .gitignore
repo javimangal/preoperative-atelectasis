@@ -24,9 +24,10 @@
 # RStudio files
 .Rproj.user/
 
-# html and pdf within R folder  
+# html, pdf and image files within R folder  
 /R/*.html
 /R/*.pdf
+/R/images
 
 # produced vignettes
 vignettes/*.html
@@ -46,8 +47,8 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Manuscript on progress 
-docs/manuscript/*docx
+# Manuscript in progress 
+docs/manuscript/*.docx
 
 # translation temp files
 po/*~

@@ -1,12 +1,22 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
-title: "My Research Software"
+message: "If you use this material, please cite it as below."
+title: "Preoperative Atelectasis in Bariatric Surgery"
 authors:
-  - family-names: Druskat
-    given-names: Stephan
-    orcid: https://orcid.org/1234-5678-9101-1121
-version: 2.0.4
-date-released: 2021-08-11
-doi: 10.5281/zenodo.1234
+  - family-names: Mancilla Galindo
+    given-names: Javier
+    orcid: https://orcid.org/0000-0002-0718-467X
+identifiers:
+  - type: doi
+    value: "in_progress"
+    description: The concept DOI for the collection of these materials.
+repository-code: "https://github.com/javimangal/preoperative-atelectasis"
+keywords:
+  - Pulmonary Atelectasis
+  - Bariatric Surgery
+  - Obesity
+  - Oxygen Saturation
+  - Anesthesiology
+  - Epidemiology
 license: Apache-2.0
-repository-code: "https://github.com/citation-file-format/my-research-software"
+version: 1.0.0
+date-released: 2023-11-27
