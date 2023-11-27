@@ -51,7 +51,7 @@ atelectasis_total_location <- data %>%
     Percentage = (round((Freq / sum(Freq) * 100), digits = 2)),
     type_obesity = "Total"
   )
-atelectasis_total_location$sumpercent <- paste(
+atelectasis_total_location$sumpercent <- paste0(
   atelectasis_total_location$Freq,
   " (", atelectasis_total_location$Percentage, "%)"
 )
@@ -65,7 +65,7 @@ atelectasis_obesity_location <- data %>%
   group_by(type_obesity, atelectasis_location) %>%
   summarise(Freq = n()) %>%
   mutate(Percentage = (round((Freq / sum(Freq) * 100), digits = 2)))
-atelectasis_obesity_location$sumpercent <- paste(
+atelectasis_obesity_location$sumpercent <- paste0(
   atelectasis_obesity_location$Freq, " (",
   atelectasis_obesity_location$Percentage, "%)"
 )

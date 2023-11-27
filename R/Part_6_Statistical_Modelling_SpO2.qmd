@@ -43,14 +43,13 @@ pacman::p_load(
 )
 ```
 
-
 ##### Session and package dependencies
 
 ```{r}
 # Credits chunk of code: Alex Bossers, Utrecht University (a.bossers@uu.nl)
 
-# remove clutter
 session <- sessionInfo()
+# remove clutter
 session$BLAS <- NULL
 session$LAPACK <- NULL
 session$loadedOnly <- NULL
@@ -107,25 +106,27 @@ data$atelectasis_percent_factor <- factor(
 data$atelectasis_percent[data$atelectasis_percent==27.5] <- 17.5
 ```
 
-# Model SpO2   
+# Model SpO2
 
-The SpO2 variable does not have a normal distribution. Furthermore, the distance between 1% increases in SpO2 cannot be considered equidistant increases since values are determined from the S-shaped curve of hemoglobin saturation. This is the reason why the distribution of SpO2 is negatively skewed, with upper values reaching the saturation point of the hemoglobin curve. 
+The SpO2 variable does not have a normal distribution. Furthermore, the distance between 1% increases in SpO2 cannot be considered equidistant increases since values are determined from the S-shaped curve of hemoglobin saturation. This is the reason why the distribution of SpO2 is negatively skewed, with upper values reaching the saturation point of the hemoglobin curve.
 
-Therefore, modelling SpO2 as a linear term could be potentially misleading. Nonetheless, a model assuming a gaussian distribution for SpO2 may potentially be easier to understand and communicate. 
+Therefore, modelling SpO2 as a linear term could be potentially misleading. Nonetheless, a model assuming a gaussian distribution for SpO2 may potentially be easier to understand and communicate.
 
-Thus, I first created model SpO2 assuming a gaussian distribution and then applied a fractional regression model which is more appropriate for the distribution of this variable. The rationale for this was that if conclusions were not different with both models, presenting a model assuming a gaussian distribution would have been easier to understand and communicate. However, since conclusions were indeed different, I will present the results for the more appropriate fractional regression model. 
+Thus, I first created model SpO2 assuming a gaussian distribution and then applied a fractional regression model which is more appropriate for the distribution of this variable. The rationale for this was that if conclusions were not different with both models, presenting a model assuming a gaussian distribution would have been easier to understand and communicate. However, since conclusions were indeed different, I will present the results for the more appropriate fractional regression model.
 
+## Fractional regression model
 
-## Fractional regression model       
+Convert SpO2 to fractional values between 0 and 1 to model.
 
-Convert SpO2 to fractional values between 0 and 1 to model.   
 ```{r}
 #| echo: true
 data <- data %>% mutate(spo2_fraction = spo2_VPO/100)
 ```
 
-#### Empty model   
-First, I will fit an empty model    
+#### Empty model
+
+First, I will fit an empty model
+
 ```{r}
 model<-gam(spo2_fraction~1,
            data=data, 
@@ -140,10 +141,12 @@ dev_empty <- summary(model)$dev.expl
 summary(model)
 ```
 
-#### Smooth BMI   
+#### Smooth BMI
+
 Model with a smooth BMI term as the only explanatory variable.
 
-Since we are now using a different family function (quasibinomial with logit link) and we are no longer assuming a Gaussian distribution, it is important to determine the k value that offers the best representation of the change in the outcome variable with this function. I checked this by varying the value of k in the following code and ***k=8**** offered the best visual representation with the largest increase in deviance explained and optimal k.value. This can be replicated by varying the value of k in the code:   
+Since we are now using a different family function (quasibinomial with logit link) and we are no longer assuming a Gaussian distribution, it is important to determine the k value that offers the best representation of the change in the outcome variable with this function. I checked this by varying the value of k in the following code and ***k=8***\* offered the best visual representation with the largest increase in deviance explained and optimal k.value. This can be replicated by varying the value of k in the code:
+
 ```{r}
 model_BMI <- gam(spo2_fraction~s(BMI,k=8), 
                  data=data, 
@@ -153,7 +156,6 @@ model_BMI <- gam(spo2_fraction~s(BMI,k=8),
 R2_BMI <- summary(model_BMI)$r.sq
 dev_BMI <- summary(model_BMI)$dev.expl
 ```
-
 
 ```{r}
 summary(model_BMI)
@@ -177,7 +179,9 @@ gam.check(model_BMI)
 ```
 
 #### OSA only
-Fit a model that only contains OSA:   
+
+Fit a model that only contains OSA:
+
 ```{r}
 model_OSA_only<-gam(spo2_fraction~sleep_apnea,
                     data=data,
@@ -199,8 +203,10 @@ summary(model_OSA_only)
 gam.check(model_OSA_only)
 ```
 
-#### Atelectasis percent   
-Fit a model that only contains atelectasis percent:    
+#### Atelectasis percent
+
+Fit a model that only contains atelectasis percent:
+
 ```{r}
 model_atel_only<-gam(spo2_fraction ~ atelectasis_percent_factor,
                      data=data, 
@@ -210,7 +216,6 @@ model_atel_only<-gam(spo2_fraction ~ atelectasis_percent_factor,
 R2_atel_only <- summary(model_atel_only)$r.sq
 dev_atel_only <- summary(model_atel_only)$dev.expl
 ```
-
 
 ```{r}
 summary(model_atel_only)
@@ -223,12 +228,11 @@ summary(model_atel_only)
 gam.check(model_atel_only)
 ```
 
-#### Atelectasis percent smooth term   
+#### Atelectasis percent smooth term
 
-Fit a model that contains atelectasis percent under a smooth term. 
+Fit a model that contains atelectasis percent under a smooth term.
 
-Note that this is a different function than models created in Part 4 since a gaussian function is no longer used. Thus, I determined the optimal k value which is ***k=5***. This is comparable to having atelectasis percentage as categorical as will be shown later. However, the smooth term will allow to have a visual representation of the partial effect of atelectasis percent on SpO2. Thus, I will keep the smooth term to model the effect of atelectasis.      
-
+Note that this is a different function than models created in Part 4 since a gaussian function is no longer used. Thus, I determined the optimal k value which is ***k=5***. This is comparable to having atelectasis percentage as categorical as will be shown later. However, the smooth term will allow to have a visual representation of the partial effect of atelectasis percent on SpO2. Thus, I will keep the smooth term to model the effect of atelectasis.
 
 ```{r}
 model_atel_smooth <- gam(spo2_fraction ~ s(atelectasis_percent,k=5),
@@ -243,7 +247,6 @@ dev_atel_smooth <- summary(model_atel_smooth)$dev.expl
 ```{r}
 plot(model_atel_smooth)
 ```
-
 
 ```{r}
 summary(model_atel_smooth)
@@ -261,8 +264,10 @@ k.check(model_atel_smooth)
 gam.check(model_atel_smooth)
 ```
 
-#### s(BMI) + s(atelectasis percentage)      
-Fit model sBMI plus atelectasis percentage:      
+#### s(BMI) + s(atelectasis percentage)
+
+Fit model sBMI plus atelectasis percentage:
+
 ```{r}
 model_atel<-gam(spo2_fraction ~ s(BMI,k=8) + 
                   s(atelectasis_percent,k=5),
@@ -274,11 +279,9 @@ R2_atel <- summary(model_atel)$r.sq
 dev_atel <- summary(model_atel)$dev.expl
 ```
 
-
 ```{r}
 summary(model_atel)
 ```
-
 
 ```{r}
 #| include: false 
@@ -292,8 +295,10 @@ plot(model_atel, all.terms=TRUE)
 gam.check(model_atel)
 ```
 
-### OSA + BMI    
-Model sleep apnea plus sBMI:    
+### OSA + BMI
+
+Model sleep apnea plus sBMI:
+
 ```{r}
 model_OSA <- gam(spo2_fraction ~ s(BMI,k=8) + sleep_apnea, 
                data=data, 
@@ -304,11 +309,9 @@ R2_OSA <- summary(model_OSA)$r.sq
 dev_OSA <- summary(model_OSA)$dev.expl
 ```
 
-
 ```{r}
 summary(model_OSA)
 ```
-
 
 ```{r}
 #| include: false 
@@ -316,8 +319,10 @@ summary(model_OSA)
 plot(model_OSA, all.terms=TRUE)
 ```
 
-### sBMI + OSA + atelectasis percent 
-Model sBMI + sleep apnea + atelectasis percent:      
+### sBMI + OSA + atelectasis percent
+
+Model sBMI + sleep apnea + atelectasis percent:
+
 ```{r}
 model_OSA_atel <-gam(spo2_fraction ~ s(BMI,k=8) + sleep_apnea + 
                        s(atelectasis_percent,k=5),
@@ -329,11 +334,9 @@ R2_OSA_atel <- summary(model_OSA_atel)$r.sq
 dev_OSA_atel <- summary(model_OSA_atel)$dev.expl
 ```
 
-
 ```{r}
 summary(model_OSA_atel)
 ```
-
 
 ```{r}
 #| include: false 
@@ -347,8 +350,10 @@ plot(model_OSA_atel, all.terms=TRUE)
 gam.check(model_OSA_atel)
 ```
 
-### Adjusted model BMI      
-Fit model for BMI adjusted for confounders:   
+### Adjusted model BMI
+
+Fit model for BMI adjusted for confounders:
+
 ```{r}
 model_adj_BMI <-gam(spo2_fraction ~ s(BMI,k=8) + sex + age + sleep_apnea +
                       hb + altitude_cat,
@@ -360,7 +365,6 @@ model_adj_BMI <-gam(spo2_fraction ~ s(BMI,k=8) + sex + age + sleep_apnea +
 R2_adj_BMI <- summary(model_adj_BMI)$r.sq
 dev_adj_BMI <- summary(model_adj_BMI)$dev.expl
 ```
-
 
 ```{r}
 summary(model_adj_BMI)
@@ -378,8 +382,10 @@ plot(model_adj_BMI, all.terms=TRUE)
 gam.check(model_adj_BMI)
 ```
 
-### Adjusted model Atelectasis Percent        
-Fit model for atelectasis percent adjusted for confounders:   
+### Adjusted model Atelectasis Percent
+
+Fit model for atelectasis percent adjusted for confounders:
+
 ```{r}
 model_adj_atelectasis <-gam(spo2_fraction ~ s(atelectasis_percent,k=5) +
                               sex + age + sleep_apnea + hb + altitude_cat,
@@ -391,7 +397,6 @@ model_adj_atelectasis <-gam(spo2_fraction ~ s(atelectasis_percent,k=5) +
 R2_adj_atelectasis <- summary(model_adj_atelectasis)$r.sq
 dev_adj_atelectasis <- summary(model_adj_atelectasis)$dev.expl
 ```
-
 
 ```{r}
 summary(model_adj_atelectasis)
@@ -409,8 +414,10 @@ plot(model_adj_atelectasis, all.terms=TRUE)
 gam.check(model_adj_atelectasis)
 ```
 
-### Fully adjusted model    
-Fit fully adjusted model including both BMI and atelectasis percentage:       
+### Fully adjusted model
+
+Fit fully adjusted model including both BMI and atelectasis percentage:
+
 ```{r}
 model_plus<-gam(spo2_fraction ~ s(BMI, k=8) + 
                   s(atelectasis_percent,k=5) +
@@ -424,11 +431,9 @@ R2_plus <- summary(model_plus)$r.sq
 dev_plus <- summary(model_plus)$dev.expl
 ```
 
-
 ```{r}
 summary(model_plus)
 ```
-
 
 ```{r}
 #| include: false 
@@ -442,8 +447,8 @@ plot(model_plus, all.terms=TRUE)
 gam.check(model_plus)
 ```
 
+Build a dataframe to compare models:
 
-Build a dataframe to compare models:  
 ```{r}
 models <- data.frame(
   Model = c("empty",
@@ -485,7 +490,8 @@ models <- data.frame(
   )
 ```
 
-Sort by deviance   
+Sort by deviance
+
 ```{r}
 models <- models %>% mutate(aR2 = round(aR2,3)*100,
                             dev = round(dev,3)*100
@@ -494,12 +500,15 @@ models %>% arrange(desc(dev))
 ```
 
 Sort by R2
+
 ```{r}
 models %>% arrange(desc(aR2))
 ```
 
 ### Table S2
-Create table for models:    
+
+Create table for models:
+
 ```{r}
 tab_BMI_only <- tbl_regression(model_BMI, 
                                exponentiate = TRUE, 
@@ -545,17 +554,17 @@ tableS2 <- tbl_stack(
 tableS2
 ```
 
-Save Table S2     
+Save Table S2
+
 ```{r}
 tableS2 %>%
   as_gt() %>%
   gt::gtsave(filename = "TableS2.docx", path = tabfolder)
 ```
 
+### Figure SpO2:
 
-### Figure SpO2:   
-
-#### Figure 3a: sBMI  
+#### Figure 3a: sBMI
 
 ```{r}
 #| include: false 
@@ -565,8 +574,8 @@ tableS2 %>%
 draw(model_BMI,residuals=TRUE) 
 ```
 
+Now, take the inverse logit function to assess partial effect on mean SpO2.
 
-Now, take the inverse logit function to assess partial effect on mean SpO2.   
 ```{r}
 #| include: false 
 ## Change 'false' for 'true' above to show plots.
@@ -578,7 +587,8 @@ draw(model_BMI,
      ) 
 ```
 
-Partial effect on mean SpO2:  
+Partial effect on mean SpO2:
+
 ```{r, fig.width=8, fig.height=6}
 #Draw a personalized plot:  
 plot3a <- draw(model_BMI, 
@@ -604,7 +614,7 @@ plot3a <- draw(model_BMI,
 plot3a 
 ```
 
-#### Figure 3b: sBMI_adjusted  
+#### Figure 3b: sBMI_adjusted
 
 ```{r}
 #| include: false 
@@ -614,7 +624,8 @@ plot3a
 draw(model_adj_BMI,residuals=TRUE) 
 ```
 
-Partial effect on mean SpO2:  
+Partial effect on mean SpO2:
+
 ```{r, fig.width=8, fig.height=6}
 plot3b <- draw(model_adj_BMI, 
      constant = coef(model_adj_BMI)[1], 
@@ -639,7 +650,7 @@ plot3b <- draw(model_adj_BMI,
 plot3b 
 ```
 
-#### Figure 3c: Fully adjusted BMI  
+#### Figure 3c: Fully adjusted BMI
 
 ```{r}
 #| include: false 
@@ -649,7 +660,8 @@ plot3b
 draw(model_plus,residuals=TRUE, select = "s(BMI)") 
 ```
 
-Partial effect on mean SpO2:  
+Partial effect on mean SpO2:
+
 ```{r, fig.width=8, fig.height=6}
 plot3c <- draw(model_plus, select = "s(BMI)", 
      constant = coef(model_plus)[1], 
@@ -674,10 +686,10 @@ plot3c <- draw(model_plus, select = "s(BMI)",
 plot3c 
 ```
 
+#### Figure 3d: sAtelectasis percent
 
-#### Figure 3d: sAtelectasis percent    
+Check residuals:
 
-Check residuals:   
 ```{r}
 #| include: false 
 ## Change 'false' for 'true' above to show plots.
@@ -686,8 +698,8 @@ Check residuals:
 draw(model_atel_smooth,residuals=TRUE) 
 ```
 
+Draw a personalized plot:
 
-Draw a personalized plot:  
 ```{r, fig.width=8, fig.height=6}
 plot3d <- draw(model_atel_smooth, 
      constant = coef(model_atel_smooth)[1], 
@@ -712,7 +724,7 @@ plot3d <- draw(model_atel_smooth,
 plot3d 
 ```
 
-#### Figure 3e: Atelectasis percent adjusted     
+#### Figure 3e: Atelectasis percent adjusted
 
 ```{r}
 #| include: false 
@@ -722,7 +734,8 @@ plot3d
 draw(model_adj_atelectasis,residuals=TRUE) 
 ```
 
-Partial effect on mean SpO2:  
+Partial effect on mean SpO2:
+
 ```{r, fig.width=8, fig.height=6}
 plot3e <- draw(model_adj_atelectasis, 
      constant = coef(model_adj_atelectasis)[1], 
@@ -747,7 +760,7 @@ plot3e <- draw(model_adj_atelectasis,
 plot3e 
 ```
 
-#### Figure 3f: Fully adjusted Atelectasis Percent    
+#### Figure 3f: Fully adjusted Atelectasis Percent
 
 ```{r}
 #| include: false 
@@ -757,7 +770,8 @@ plot3e
 draw(model_plus,residuals=TRUE, select = "s(atelectasis_percent)") 
 ```
 
-Partial effect on mean SpO2:  
+Partial effect on mean SpO2:
+
 ```{r, fig.width=8, fig.height=6}
 plot3f <- draw(model_plus, select = "s(atelectasis_percent)", 
      constant = coef(model_plus)[1], 
@@ -782,10 +796,8 @@ plot3f <- draw(model_plus, select = "s(atelectasis_percent)",
 plot3f 
 ```
 
+#### Figure 3
 
-
-
-#### Figure 3   
 ```{r, fig.width=13, fig.height=8}
 figure3 <- grid.arrange(plot3a, plot3b, plot3c, plot3d, plot3e, plot3f, nrow = 2)
 ```
@@ -794,7 +806,6 @@ figure3 <- grid.arrange(plot3a, plot3b, plot3c, plot3d, plot3e, plot3f, nrow = 2
 #| include: false
 ggsave("Figure3.png",plot=figure3,path=figfolder, width = 13,  height = 8, units = "in", dpi = 300)
 ```
-
 
 ```{r}
 #| include: false

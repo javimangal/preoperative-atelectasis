@@ -1,0 +1,714 @@
+---
+title: "Preoperative Atelectasis"
+subtitle: "Part 7: Posthoc Analyses"
+author: "Javier Mancilla Galindo"
+date: "`r Sys.Date()`"
+project: 
+    output-dir: ../docs/reports
+execute: 
+  echo: false
+  warning: false
+toc: true
+toc_float: true
+format:
+  html:
+    embed-resources: true
+  pdf:
+    documentclass: scrartcl
+editor: visual
+---
+
+# Rationale
+
+We observed that SpO2 starts decreasing at BMIs above 40-45. Thus, by having used the WHO obesity class categories, detail on differences above BMI 40 for the extent of atelectasis percentage may have been lost. The WHO obesity class categories do not reflect the extent of variation in BMI observed in this sample of patients:\
+
+-   Class 1, **BMI \[30,35)**: \~25% participants\
+-   Class 2, **BMI \[35,40)**: \~25% participants\
+-   Class 3, **BMI \>40**: \~50% of participants, with a median BMI above a 5 units range.
+
+Thus, creating subcategories within the class 3 obesity may allow to assess the impact of BMI increases above 40 on atelectasis percentage with more detail.
+
+Thus, I will extend the categories of BMI with the following categories:
+
+-   **BMI \[30,35)** kg/m²
+
+-   **BMI \[35,40)** kg/m²
+
+-   **BMI \[40,45)** kg/m²
+
+-   **BMI \[44,50)** kg/m²
+
+-   **BMI \>50** kg/m²
+
+# Setup
+
+#### Packages used
+
+```{r}
+#| echo: true
+if (!require("pacman", quietly = TRUE)) {
+  install.packages("pacman")
+}
+
+
+pacman::p_load(
+  tidyverse, # Used for basic data handling and visualization.
+  table1, #Used to add lables to variables.
+  RColorBrewer, #Color palettes for data visualization. 
+  gridExtra, #Used to arrange multiple ggplots in a grid.  
+  grid, #Used to arrange multiple ggplots in a grid.
+  mgcv, #Used to model non-linear relationships with a general additive model.  
+  ggmosaic, #Used to create mosaic plots.   
+  car, #Used assess distribution of continuous variables (stacked Q-Q plots).
+  simpleboot, boot, # Used to calculate mean atelectasis coverage and 
+                   # 95%CI through bootstrapping.
+  broom, #Used to exponentiate coefficients of regression models.  
+  sandwich, #Used to calculate robust standard errors for prevalence ratios.
+  flextable, #Used to export tables.  
+  rms, #Used to model ordinal outcome (atelectasis percent) and 
+       #test proportional odds assumptions.  
+  VGAM, #Used to model partial proportional odds model.   
+  gt #Used to present a summary of the results of regression models.  
+)
+```
+
+##### Session and package dependencies
+
+```{r}
+# Credits chunk of code: Alex Bossers, Utrecht University (a.bossers@uu.nl)
+
+# remove clutter
+session <- sessionInfo()
+session$BLAS <- NULL
+session$LAPACK <- NULL
+session$loadedOnly <- NULL
+# write log file
+writeLines(
+  capture.output(print(session, locale = FALSE)),
+  paste0("sessions/",lubridate::today(), "_session_Part_7.txt")
+)
+
+session
+
+rm(session)
+
+```
+
+Set seed (for reproducibility of bootstrapping) as the current year 2023:
+
+```{r}
+#| echo: true
+seed <- 2023 
+```
+
+```{r}
+#| include: false
+
+# Create directories for sub-folders 
+figfolder <- "../results/output_figures"
+tabfolder <- "../results/output_tables"
+dir.create(figfolder, showWarnings = FALSE)
+dir.create(tabfolder, showWarnings = FALSE)
+```
+
+```{r}
+#| include: false
+
+# Load dataset  
+data <- read.csv("../data/processed/atelectasis_included.csv",
+                 na.strings="NA", 
+                 row.names = NULL)
+# Recode variables 
+source("scripts/variable_names.R")
+
+
+# Recreate variables created in: 
+## Part 2 (altitude category) : 
+data <- data %>% 
+  mutate(
+    altitude_cat = cut(altitude,
+                       breaks=c(0,1000,2500),
+                       right=FALSE,
+                       labels=c("Low altitude","Moderate altitude")
+                       )
+    )
+
+
+## Part 4 (collapsed atelectasis percent)
+data$atelectasis_percent_factor <- factor(
+  data$atelectasis_percent, 
+  levels=c(0,2.5,5,7.5,10,12.5,15,17.5,27.5)
+  ) %>% 
+  fct_collapse("17.5%" = c(17.5,27.5)) %>% 
+  factor(labels = c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%"))
+
+
+## New BMI breaks will replace the obesity type variable. Will keep a column for backup:     
+data <- data %>% 
+  mutate(
+    class_obesity = type_obesity,
+    type_obesity = cut(
+      BMI,
+      breaks=c(30,35,40,45,50,80),
+      right=FALSE,
+      labels=c("30-35","35-40","40-45","45-50","≥50")
+      )
+  )
+```
+
+# Outcome variable
+
+```{r}
+#| include: false
+
+attach(data)
+```
+
+Corroborate that the new BMI breaks category was created successfully:
+
+```{r}
+frequencies <- table(type_obesity)
+frequencies
+```
+
+Percentages:
+
+```{r}
+round((prop.table(frequencies)*100),1)
+```
+
+## Prevalence of atelectasis
+
+```{r}
+frequencies <- table(atelectasis)
+percent <- round((prop.table(frequencies)*100),1)
+total <- rbind(frequencies,percent)
+total
+```
+
+Prevalence of atelectasis with 95% confidence interval
+
+```{r}
+prev_atelectasis <- prop.test(frequencies, correct=FALSE)
+confint <- round((prev_atelectasis$conf.int*100),2)
+prev_atelectasis
+```
+
+> The prevalence of atelectasis was **`r percent[1]` (95%CI: `r confint`)**.
+
+```{r}
+#| include: false
+rm(frequencies, percent, prev_atelectasis, total, confint)
+```
+
+## Atelectasis - obesity class
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  dplyr::summarize(mean_expected_freq = n()/(nlevels(type_obesity)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+Frequencies:
+
+```{r}
+frequencies <- table(type_obesity, atelectasis)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1),4)*100
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(
+    aes(x = product(atelectasis,type_obesity), 
+        fill=atelectasis),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  labs(
+    y = "Atelectasis",
+    x = "Obesity class"
+  ) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+```{r}
+#| include: false
+rm(mean_exp,frequencies, chi)
+```
+
+#### Atelectasis location by obesity class
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(type_obesity, atelectasis_location) %>% 
+  dplyr::summarize(mean_expected_freq = n()/(nlevels(type_obesity)*nlevels(atelectasis_location)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(type_obesity, atelectasis_location)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1),4)*100
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(
+    aes(x = product(type_obesity,atelectasis_location),
+        fill=type_obesity),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c(
+    "seagreen1",
+    "seagreen2",
+    "seagreen3",
+    "seagreen4",
+    "darkgreen")
+    ) +
+  labs(
+    y = "Obesity class",
+    x = "Atelectasis location"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+#| warning: false
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+Prevalence of atelectasis with 95% confidence intervals calculated with sourced script ***Prevalence_atelectasis.R***
+
+```{r}
+#| include: false
+source("scripts/Prevalence_atelectasis.R", local = knitr::knit_global())
+```
+
+```{r}
+atelectasis %>%
+  replace(is.na(.), " ") %>% 
+  gt()
+```
+
+```{r}
+#| include: false 
+rm(mean_exp, frequencies, chi, location, atelectasis_obesity, atelectasis_total, atelectasis_total_location, atelectasis_obesity_location, atelectasis)
+```
+
+#### Atelectasis Percent
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+# Assess distribution if assumed to be a numeric variable:   
+data %>% 
+  mutate(atelectasis_percent = as.numeric(atelectasis_percent)) %>%
+  ggplot(aes(x = atelectasis_percent)) +
+  geom_histogram(colour = "black") +
+  facet_grid(type_obesity ~ .)
+
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+# Distribution excluding 0:  
+data %>% 
+  mutate(atelectasis_percent = as.numeric(atelectasis_percent)) %>% 
+  filter(atelectasis_percent >0) %>% 
+  ggplot(aes(x = atelectasis_percent)) +
+  geom_histogram(colour = "black") +
+  facet_grid(type_obesity ~ .)
+
+```
+
+#### Mean atelectasis percentage
+
+The following would be the mean atelectasis percentage coverage if a normal distribution were assumed, which is what has been done in some prior studies:
+
+```{r}
+data %>%  dplyr::summarize(
+    mean = mean(atelectasis_percent),
+    sd = sd(atelectasis_percent)
+  ) 
+```
+
+And by obesity class:
+
+```{r}
+data %>% group_by(type_obesity) %>%
+  dplyr::summarize(
+    mean = mean(atelectasis_percent),
+    sd = sd(atelectasis_percent)
+  ) 
+```
+
+As is evident from these numbers, assuming normality causes standard deviation to capture negative values, which is impossible in reality for this variable.
+
+Thus, bootstrapping the mean and 95%CI is expected to lead to more appropriate estimates.
+
+I will calculate this for class 3 subgroups:
+
+```{r}
+data_sub_1 <- data %>% filter(type_obesity=="40-45") 
+data_sub_2 <- data %>% filter(type_obesity=="45-50") 
+data_sub_3 <- data %>% filter(type_obesity=="≥50") 
+```
+
+##### Subgroup 1
+
+Mean:
+
+```{r}
+set.seed(seed)
+boot_sub1 <- one.boot(data_sub_1$atelectasis_percent, mean, R=10000)
+mean_boot_sub1 <- mean(boot_sub1$t)
+mean_boot_sub1
+```
+
+95% CI:
+
+```{r}
+#| warning: false
+boot_ci_sub1 <- boot.ci(boot_sub1)
+boot_ci_sub1
+```
+
+##### Subgroup 2
+
+Mean:
+
+```{r}
+set.seed(seed)
+boot_sub2 <- one.boot(data_sub_2$atelectasis_percent, mean, R=10000)
+mean_boot_sub2 <- mean(boot_sub2$t)
+mean_boot_sub2
+```
+
+95% CI:
+
+```{r}
+#| warning: false
+boot_ci_sub2 <- boot.ci(boot_sub2)
+boot_ci_sub2
+```
+
+##### Subgroup 3
+
+Mean:
+
+```{r}
+set.seed(seed)
+boot_sub3 <- one.boot(data_sub_3$atelectasis_percent, mean, R=10000)
+mean_boot_sub3 <- mean(boot_sub3$t)
+mean_boot_sub3
+```
+
+95% CI:
+
+```{r}
+#| warning: false
+boot_ci_sub3 <- boot.ci(boot_sub3)
+boot_ci_sub3
+```
+
+> The mean atelectasis percentage coverage in class 3 obesity subcategories was: subgroup 1 (`r round(mean_boot_sub1,2)`%, 95%CI:`r round(boot_ci_sub1$bca[1,4],2)`-`r round(boot_ci_sub1$bca[1,5],2)`), subgroup 2 (`r round(mean_boot_sub2,2)`%, 95%CI:`r round(boot_ci_sub2$bca[1,4],2)`-`r round(boot_ci_sub2$bca[1,5],2)`), and subgroup 3 (`r round(mean_boot_sub3,2)`%, 95%CI:`r round(boot_ci_sub3$bca[1,4],2)`-`r round(boot_ci_sub3$bca[1,5],2)`).
+
+```{r}
+#| include: false
+rm(boot_atel,mean_boot,boot_ci,data_sub_1,data_sub_2,data_sub_3,boot_sub1,mean_boot_sub1,boot_ci_sub1,boot_sub2,mean_boot_sub2,boot_ci_sub2,boot_sub3,mean_boot_sub3,boot_ci_sub3)
+```
+
+##### Atelectasis percentage by obesity subgroups
+
+Now, I will continue assessing atelectasis percentage if assumed to be categorical ordinal:
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  mutate(
+    atelectasis_percent=factor(atelectasis_percent)) %>%
+  dplyr::summarize(
+    mean_expected_freq = n()/(nlevels(type_obesity)*nlevels(atelectasis_percent))
+    )
+mean_exp
+```
+
+Mean expected frequency is very close to 5.0, so I will use chi-squared with continuity correction.
+
+Frequencies:
+
+```{r}
+frequencies <- table(atelectasis_percent,type_obesity)
+frequencies
+```
+
+```{r}
+#| warning: false
+chi <- chisq.test(frequencies, correct=TRUE)
+chi
+```
+
+##### Figure 2
+
+Figure 2 created with sourced script ***Figure2.R***
+
+```{r}
+#| include: false
+source("scripts/Figure2.R")
+```
+
+![Figure 2. Atelectasis percentage on chest CT by obesity categories.](images/Figure2-01.jpg)
+
+```{r}
+#| include: false
+rm(mean_exp,frequencies,percent,frequencies,chi,Figure2,Figure2b,Figure2a,
+   prop_fig2a,prop_fig2b,prop_fig2b_sub)
+```
+
+# Prevalence Ratio
+
+This [paper](https://doi.org/10.1016/j.annepidem.2023.08.001) and accompanying code were used to calculate prevalence ratios.
+
+A modified Poisson regression model with robust errors will be applied to obtain prevalence ratios.
+
+Prevalence ratios were calculated with the accompanying sourced script ***Prevalence_Ratio_subgroups.R***
+
+## Table 2 appendage
+
+```{r}
+source("scripts/Prevalence_Ratio_subgroups.R")
+table2 %>% gt()
+```
+
+Note that in this model the PR for class 2 obesity changed slightly. Nonetheless, the direction of the results did not change and there are only slight changes in estimates and confidence intervals by a few decimals. Thus, I will keep the results of the original model for class 2 obesity as they are more conservative.
+
+```{r}
+#| include: false 
+rm(dataprev, poisson_fit, covmat, se, model_output, model_output2,
+   table_output, table_output2, table2)
+```
+
+# Ordinal Logistic Regression Model
+
+This modelling strategy was performed according to:\
+- [Harrel, Frank. March, 2022. "Assessing the Proportional Odds Assumption and its Impact". Statistical Thinking. March 9, 2022.](https://www.fharrell.com/post/impactpo/index.html#overall-efficacy-assessment)
+
+```{r}
+# Will colapse atelectasis percent category as done before  
+data$atelectasis_percent[data$atelectasis_percent==27.5] <- 17.5
+
+# Will accomodate atelectasis percent to be ordered for modelling. 
+data <- data %>% 
+  mutate(atelectasis_percent = ordered(atelectasis_percent)) 
+```
+
+```{r}
+# Visualize pattern of atelectasis percent increase by obesity type category.  
+data %>% 
+  ggplot(aes(x = type_obesity, fill = atelectasis_percent)) + 
+  geom_bar() +  
+  scale_fill_manual(values = brewer.pal(8,"Blues")) + 
+  labs(
+    x = "Obesity subgroups",
+    y = "Count",
+    title = "Atelectasis percent increase by obesity subgroups"
+  ) +
+  theme_minimal()
+```
+
+## Check proportional odds assumption for main variable of interest:
+
+```{r}
+options(
+  datadist=NULL,
+  prType='html'
+  )
+
+dd <- datadist(data); options(datadist='dd')
+```
+
+```{r}
+fit_BMI <- orm(atelectasis_percent ~ type_obesity,
+    data = data
+    )
+
+fit_BMI
+```
+
+Odds ratio for type obesity in an univariable model:
+
+```{r}
+summary(fit_BMI, type_obesity="30-35")
+```
+
+Proportional odds assumption:
+
+```{r}
+anova(fit_BMI)
+```
+
+This shows that the proportional odds assumption is not met since p\<0.05 in the ANOVA test.
+
+Will repeat the process described in Part 5:
+
+```{r}
+data_prop <- data 
+data_prop$atelectasis_percent <- fct_collapse(data_prop$atelectasis_percent,
+                                              "0" = c("0","2.5"),
+                                              "5" = c("5","7.5"),
+                                              "10" = c("10","12.5"),
+                                              "15" = c("15","17.5")
+                                              )
+
+table(data_prop$atelectasis_percent)
+```
+
+Are subgroups better represented now?
+
+```{r}
+table(data_prop$atelectasis_percent, 
+      data_prop$type_obesity)
+```
+
+Some improvement.
+
+Will now test the impact of not meeting the proportional odds assumption in a model adjusted for covariates:
+
+```{r}
+#| echo: true
+#| warning: false 
+impact_PO <- impactPO(
+  atelectasis_percent ~ type_obesity + sleep_apnea + age + sex, 
+  nonpo = ~ type_obesity,
+  data = data,
+  newdata = data_prop,
+  relax = "multinomial"
+  )
+```
+
+I was not able to compare against the partial proportional odds (PPO). This can be corroborated by changing `relax = "multinomial"` to `relax = "both"` or `relax = "ppo"` in the above code. This was likely due to a problem in convergence of models with such small subgroups. Previously, I tried comparing models for posthoc analyses in the `VGAM` package and had problems in convergence. Thus, I am presenting the results for the comparison against a multinomial model only:
+
+```{r}
+# rms::print.impactPO had a bug, so I had to get my way around with 
+# this code to print results nicely:   
+
+data.frame(t(impact_PO$stats)) %>% 
+  `colnames<-`(NULL)  %>%
+  `colnames<-`(.[1, ]) %>% 
+  rownames_to_column() %>% 
+  dplyr::slice(-1) %>% 
+  mutate(PO = replace_na(PO," ")) %>% 
+  gt()
+```
+
+A multinomial model seems to be a better model. Nonetheless, note that such small subgroups would lead to not having estimates for several subgroups:
+
+```{r}
+table(atelectasis_percent,type_obesity)
+```
+
+As I mentioned, I previously tried fitting a PPO model with `VGAM` and I couldn't obtain estimates for several subgroups. Despite being potentially better, since this study is not powered to fit a multinomial model with such numerous comparisons, I will proceed to fit ordinal models as the intention of these posthoc analyses is to gain greater insight into the main findings.
+
+## Univariate models for covariates:
+
+```{r}
+fit_OSA <- orm(atelectasis_percent ~ sleep_apnea,
+    data = data
+    )
+
+fit_OSA
+```
+
+```{r}
+summary(fit_OSA)
+```
+
+```{r}
+fit_sex <- orm(atelectasis_percent ~ sex,
+    data = data
+    )
+
+fit_sex
+```
+
+```{r}
+summary(fit_sex, sex = "Man")
+```
+
+```{r}
+fit_age <- orm(atelectasis_percent ~ age,
+    data = data
+    )
+
+fit_age
+```
+
+```{r}
+summary(fit_age)
+```
+
+## Multivariable model
+
+```{r}
+fit_multi <- orm(atelectasis_percent ~ type_obesity +
+                   sleep_apnea + sex + age,
+                 data = data,
+                 )
+
+fit_multi
+```
+
+```{r}
+summary(fit_multi, type_obesity = "30-35", sex = "Man")
+```
+
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+detach(data)
+
+pacman::p_unload(negate = TRUE)
+
+rm(list=setdiff(ls(pattern = "^fit"), lsf.str()))
+rm(data, data_prop, dd, impact_PO, figfolder, tabfolder, seed)
+```
