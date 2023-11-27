@@ -33,21 +33,18 @@ pacman::p_load(
   tidyverse, # Used for basic data handling and visualization.
   RColorBrewer, #Color palettes for data visualization. 
   table1, #Used to add lables to variables.
-  flextable, #Used to export tables.  
-  officer,  #Used to export tables.
   dagitty, #Used in conjunction with https://www.dagitty.net/ to create 
           #directed acyclic graph to inform statistical modelling.  
-  mgcv, #Used to model non-linear relationships with a general additive model.  
   lavaan, #Used to create correlation matrix to assess conditional independencies.  
-  broom, #Used to exponentiate coefficients of regression models. 
-  sandwich, #Used to calculate robust standard errors for prevalence ratios.  
-  ordinal, #Used to model ordinal outcome (atelectasis percent) and to test proportional odds assumptions.  
+  broom, #Used to exponentiate coefficients of regression models.  
+  sandwich, #Used to calculate robust standard errors for prevalence ratios.
+  flextable, #Used to export tables.  
+  rms, #Used to model ordinal outcome (atelectasis percent) and 
+       #test proportional odds assumptions.  
   VGAM, #Used to model partial proportional odds model.   
-  gt, #Used to present a summary of the results of regression models.   
-  gtsummary #Used to create table to summarize regression models.  
+  gt #Used to present a summary of the results of regression models.   
 )
 ```
-
 
 ##### Session and package dependencies
 
@@ -110,7 +107,6 @@ data$atelectasis_percent <- factor(
   factor(labels = c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%"))
 ```
 
-
 ## DAG
 
 DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG.R***
@@ -120,11 +116,12 @@ source("scripts/DAG.R")
 plot(DAG)
 ```
 
-## Testing of conditional independencies in DAG:  
+## Testing of conditional independencies in DAG:
 
-This procedure was performed as suggested in [this article](https://doi.org/10.1002/cpz1.45).  
+This procedure was performed as suggested in [this article](https://doi.org/10.1002/cpz1.45).
 
-Implied conditional independencies:   
+Implied conditional independencies:
+
 ```{r}
 impliedConditionalIndependencies(DAG)
 ```
@@ -160,7 +157,6 @@ corr <- lavCor(subsetcondit,
 corr
 ```
 
-
 ```{r}
 #| include: false 
 ## Change 'false' for 'true' above to show results 
@@ -169,33 +165,35 @@ localtests <- localTests(DAG, sample.cov=corr, sample.nobs=nrow( subsetcondit ) 
 localtests
 ```
 
-Local tests results plot:   
+Local tests results plot:
+
 ```{r}
 plotLocalTestResults(localtests)
 ```
 
-Conditional independence assumption OK as all confidence intervals cointain 0.  
+Conditional independence assumption OK as all confidence intervals cointain 0.
 
-The minimal set of adjustment for models is ***age***, ***sex***, and ***sleep_apnea***.       
+The minimal set of adjustment for models is ***age***, ***sex***, and ***sleep_apnea***.
 
 ```{r}
 #| include: false 
 rm(DAG,corr,localtests,subsetcondit)
 ```
 
+# Prevalence Ratio
 
-# Prevalence Ratio   
-This [paper](https://doi.org/10.1016/j.annepidem.2023.08.001) and accompanying code were used to calculate prevalence ratios.    
+This [paper](https://doi.org/10.1016/j.annepidem.2023.08.001) and accompanying code were used to calculate prevalence ratios.
 
 A modified Poisson regression model with robust errors will be applied to obtain prevalence ratios.
 
 Prevalence ratios were calculated with the accompanying sourced script ***Prevalence_Ratio.R***
-## Table 2   
+
+## Table 2
+
 ```{r}
 source("scripts/Prevalence_Ratio.R")
-flextable(table2)
+table2 %>% gt()
 ```
-
 
 ```{r}
 #| include: false 
@@ -203,12 +201,10 @@ rm(dataprev, poisson_fit, covmat, se, model_output, model_output2,
    table_output, table_output2, table2)
 ```
 
+# Ordinal Logistic Regression Model
 
-# Ordinal Logistic Regression Model   
-
-Some code available in the following [resource](https://tdunn.ca/posts/2020-03-15-ordinal-regression-in-r-part-1) was used for these analyses:   
-- Dunn, Taylor. 2020. “Ordinal Regression in R: Part 1.” March 15, 2020.    
-
+This modelling strategy was performed according to:\
+- [Harrel, Frank. March, 2022. "Assessing the Proportional Odds Assumption and its Impact". Statistical Thinking. March 9, 2022.](https://www.fharrell.com/post/impactpo/index.html#overall-efficacy-assessment)
 
 ```{r}
 # Rename type obesity levels to facilitate reading of results.
@@ -220,7 +216,7 @@ data <- data %>%
       "1"="Class 1 Obesity",
       "2"="Class 2 Obesity",
       "3"="Class 3 Obesity"
-      ),
+      ), 
     atelectasis_percent = ordered(atelectasis_percent)
     ) 
 ```
@@ -239,101 +235,47 @@ data %>%
   theme_minimal()
 ```
 
-## Univariable models   
-
-The **logit** link function will be used for all models since this distribution provided the best fit for the fully adjusted model.   
+## Check proportional odds assumption for main variable of interest:
 
 ```{r}
-#| include: false 
-## Change 'false' for 'true' above to show results 
-data %>%
-  nest(data = everything()) %>%
- crossing(
-    link = c("logit", "probit", "cloglog", "cauchit"),
-    threshold = c("flexible", "equidistant", "symmetric", "symmetric2")
-  ) %>%
-  mutate(
-    mod = map2(
-      data, link,
-      ~clm(atelectasis_percent ~ type_obesity + sex + age + sleep_apnea, 
-        data = .x, link = .y
-      )
-    )
-  ) %>%
-  mutate(
-    mod_summary = map(
-      mod,
-      ~glance(.x) %>% mutate(logLik = as.numeric(logLik))
-    )
-  ) %>%
-  unnest(mod_summary) %>%
-  dplyr::select(link, threshold, logLik, edf, AIC, BIC) %>%
-  arrange(logLik) %>%
-  gt()
-```
-
-Obesity class:   
-```{r}
-#| warning: true
-fit_BMI <- clm(atelectasis_percent~type_obesity,
-               data = data, 
-               link = "logit", threshold = "flexible")
-
-summary(fit_BMI)
-```
-
-Nominal test   
-```{r}
-nominal_test(fit_BMI)
-```
-
-Sacle effects test:  
-```{r}
-scale_test(fit_BMI)
-```
-
-```{r}
-uni_BMI <- tidy(fit_BMI, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_merge(c(conf.low, conf.high),
-             pattern = "{1}&mdash;{2}") %>% 
-  cols_label(
-    conf.low = "95%CI",
-    estimate = "OR",
-    term = "Variable"
+options(
+  datadist=NULL,
+  prType='html'
   )
 
-uni_BMI
+dd <- datadist(data); options(datadist='dd')
 ```
-
-Output not showing result of nominal test. When running traceback, this seems to be a problem of failure to converge of the nominal test function. However, this does not constitute a problem in the model convergence itself as shown bellow:   
-```{r}
-convergence(fit_BMI)
-```
-
-This problem has been signalled in [post1](https://stats.stackexchange.com/questions/411618/why-is-my-output-for-nominal-test-incomplete) and [post2](https://github.com/runehaubo/ordinal/issues/15), without an available solution yet within the package. However, running a model with a nominal term for the explanatory variable and comparing them trough ANOVA is an alternative way of testing the proportional odds assumption:   
 
 ```{r}
-#| warning: true
-fit_BMInom <- clm(atelectasis_percent ~ 1, nominal= ~ type_obesity, 
-                  data = data, 
-                  link = "logit", threshold = "flexible")
+fit_BMI <- orm(atelectasis_percent ~ type_obesity,
+    data = data
+    )
 
-summary(fit_BMInom)
+fit_BMI
 ```
 
-Nominal model failed to converge, likely due to many subgroups needed to create a nominal model. Many of these subgroups for some obesity categories likely had 0 observations:   
+Odds ratio for type obesity in an univariable model:
+
 ```{r}
-table(data$atelectasis_percent, data$type_obesity)
+summary(fit_BMI, type_obesity="1")
 ```
 
-It is known that having few observations per category does not affect the results of ordinal regression, and that some categories may need to be combined to assess proportional odds assumption. [REF](https://stats.stackexchange.com/q/48844)
+Proportional odds assumption:
 
-Thus, I will create atelectasis percent categories by collapsing non-integer atelectasis percentage categories (i.e., 2.5%, 7.5%) against the immediate lower category, resulting in 5% jumps (0-5%, 5-10%, 10-15%, and ≥15%) which meet the assumption of being equi-distant categories for ordinal regression:     
+```{r}
+anova(fit_BMI)
+```
+
+This shows that the proportional odds assumption is not met since p\<0.05 in the ANOVA test.
+
+There are a couple of alternatives for modelling. One would be to fit a full multinomial model, although this would be expected to be unoptimal due to loss of statistical power, less parsimonious, and difficult interpretation compared to ordinal. A second approach would be to fir a partial proportional odds model allowing nominal effects for obesity class categories.
+
+However, it is known that violations of the proportional odds assumption may not be as serious in some cases, as explained in the reference provided before. Thus, I will test how these 2 alternative modelling strategies would compare against a proportional odds model.
+
+As a note, it is known that having few observations per category does not affect the results of ordinal regression, and that some categories may need to be combined to assess proportional odds assumption. [REF](https://stats.stackexchange.com/q/48844)
+
+Thus, I will create atelectasis percent categories by collapsing non-integer atelectasis percentage categories (i.e., 2.5%, 7.5%) against the immediate lower category, resulting in 5% jumps (0-5%, 5-10%, 10-15%, and ≥15%) which meet the assumption of being equi-distant categories for ordinal regression:
+
 ```{r}
 data_prop <- data 
 data_prop$atelectasis_percent <- fct_collapse(data_prop$atelectasis_percent,
@@ -346,621 +288,104 @@ data_prop$atelectasis_percent <- fct_collapse(data_prop$atelectasis_percent,
 table(data_prop$atelectasis_percent)
 ```
 
-Are subgroups better represented now?  
+Are subgroups better represented now?
+
 ```{r}
 table(data_prop$atelectasis_percent, 
       data_prop$type_obesity)
 ```
 
-Some improvement.   
+Some improvement.
 
-Fit ordinal model:   
-```{r}
-#| warning: true
-fit_BMI2 <- clm(atelectasis_percent~type_obesity,
-                data = data_prop, 
-                link = "logit", threshold = "flexible")
-
-summary(fit_BMI2)
-```
-
-Nominal test for proportional odds:   
-```{r}
-#| warning: true
-nominal_test(fit_BMI2)
-```
-
-Scale effects test:  
-```{r}
-scale_test(fit_BMI2)
-```
-
-Fit nominal model:   
-```{r}
-#| warning: true
-fit_BMInom2 <- clm(atelectasis_percent ~ 1, nominal= ~ type_obesity, 
-                   data = data_prop, 
-                   link = "logit", threshold = "flexible")
-
-summary(fit_BMInom2)
-```
-
-There are still problems in convergence of nominal model. Will still test with ANOVA against ordinal to have a rough idea.     
-
-```{r}
-#| warning: true
-anova(fit_BMI2,fit_BMInom2)
-```
-
-The model with nominal effects has a marginally lower AIC (360) than the ordinal model (363) p=0.02. Proportional odds assumption not met. However, nominal model had problem with convergence (unstable estimates).    
-
-One alternative would be to fully model through a multinomial logistic regression model. As already shown, nominal models have failed to converge and have reduced statistical power.    
-
-Other alternatives would be to "ignore non-proportional odds, knowing that the odds ratio may still be very meaningful, or fit a partial proportional odds model or constrained partial PO model using either Bayesian modeling with blrm or using a frequentist procedure with the VGAM package vglm function" [Reference 1](https://discourse.datamethods.org/t/ordinal-regression-when-odds-are-not-proportional/4550) plus [Reference 2](https://www.fharrell.com/post/po/).   
-
-Despite not meeting proportional odds assumption, I will present results of univariable and multivariable ordinal regression models to present first-order effects since this model is parsimonious and easier to understand. I will then try to create a partial proportional odds model to further characterize and understand exposure-response relationships.   
-
-### Covariates univariable models    
-
-I will continue trying to model without collapsing atelectasis percent to see if a partial proportional odds model could be presented as is.   
-
-Age   
-```{r}
-fit_age <- clm(atelectasis_percent~age,
-               data = data, 
-               link = "logit", threshold = "flexible")
-
-summary(fit_age)
-```
-
-```{r}
-nominal_test(fit_age)
-```
-
-```{r}
-scale_test(fit_age)
-```
-
-Proportional odds assumption not showing either. Perhaps this is a problem due to centering. Will center and re-assess.   
-
-```{r}
-data  <- data %>% mutate(agec = age/mean(age))
-```
-
-```{r}
-fit_age2 <- clm(atelectasis_percent~agec,
-                data = data, 
-                link = "logit", threshold = "flexible")
-
-summary(fit_age2)
-```
-
-```{r}
-nominal_test(fit_age2)
-```
-
-```{r}
-scale_test(fit_age2)
-```
-
-Still not shown. Will assess remaining variables to decide best approach.      
-
-```{r}
-uni_age <- tidy(fit_age, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  dplyr::slice(-(1:7))  %>% 
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_merge(c(conf.low, conf.high),
-             pattern = "{1}&mdash;{2}") %>% 
-  cols_label(
-    conf.low = "95%CI",
-    estimate = "OR",
-    term = "Variable"
-  )
-
-uni_age
-```
-
-
-Sex     
-```{r}
-fit_sex <- clm(atelectasis_percent~sex,
-               data = data, 
-               link = "logit", threshold = "flexible")
-
-summary(fit_sex)
-```
-
-```{r}
-nominal_test(fit_sex)
-```
-
-
-```{r}
-scale_test(fit_sex)
-```
-
-Nominal model still fails to converge.   
-
-```{r}
-uni_sex <- tidy(fit_sex, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%  
-  dplyr::slice(-(1:7))  %>% 
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_merge(c(conf.low, conf.high),
-             pattern = "{1}&mdash;{2}") %>% 
-  cols_label(
-    conf.low = "95%CI",
-    estimate = "OR",
-    term = "Variable"
-  )
-
- uni_sex
-```
-
-
-Sleep Apnea        
-```{r}
-fit_OSA <- clm(atelectasis_percent~sleep_apnea,
-               data = data, link = "logit", 
-               threshold = "flexible")
-
-summary(fit_OSA)
-```
-
-```{r}
-nominal_test(fit_OSA)
-
-scale_test(fit_OSA)
-```
-
-Same problem for OSA.   
-
-```{r}
-uni_OSA <- tidy(fit_OSA, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%   
-  dplyr::slice(-(1:7))  %>% 
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_merge(c(conf.low, conf.high),
-             pattern = "{1}&mdash;{2}") %>% 
-  cols_label(
-    conf.low = "95%CI",
-    estimate = "OR",
-    term = "Variable"
-  )
-
-uni_OSA
-```
-
+Will now test the impact of not meeting the proportional odds assumption in a model adjusted for covariates:
 
 ```{r}
 #| include: false
-rm(uni_age,uni_BMI,uni_OSA,uni_sex,fit_age,fit_BMI,fit_BMInom,fit_OSA,fit_sex)
-```
-
-
-
-## Ordinal (collapsed factors) Logistic Regression 
-
-Since proportional odds not met for prior model with multiple ordered categories, I will use the priorly collapsed categories to model since AIC was also much lower when including collapsed factors.      
-
-### Univariable models    
-
-Type obesity (ordinal model created before)      
-```{r}
-uni_BMI <- tidy(fit_BMI2, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_label(
-    estimate = "OR",
-    term = "Variable"
+impact_PO <- impactPO(
+  atelectasis_percent ~ type_obesity + sleep_apnea + age + sex, 
+  nonpo = ~ type_obesity,
+  data = data,
+  newdata = data_prop
   )
-
-uni_BMI
 ```
 
-
-Age   
-```{r}
-fit_age <- clm(atelectasis_percent~age,
-               data = data_prop, 
-               link = "logit", threshold = "flexible")
-
-summary(fit_age)
-```
+Comparison of proportional odds (PO), partial proportional odds (PPO), and multinomial model:
 
 ```{r}
-nominal_test(fit_age)
-```
+# rms::print.impactPO had a bug, so I had to get my way around with 
+# this code to print results nicely:   
 
-
-```{r}
-scale_test(fit_age)
-```
-
-Proportional odds assumption not showing either. Will try centered variable.   
-
-```{r}
-data_prop <- data_prop %>% mutate(agec = age/mean(age))
-```
-
-```{r}
-fit_age2 <- clm(atelectasis_percent~agec,
-                data = data_prop, 
-                link = "loglog", threshold = "flexible")
-
-summary(fit_age2)
-```
-
-```{r}
-nominal_test(fit_age2)
-```
-
-
-```{r}
-scale_test(fit_age2)
-```
-
-Still not shown. Nonetheless, proportional odds assumption is not quite as relevant for covariates. Will assess remaining variables to decide best approach.      
-
-```{r}
-uni_age <- tidy(fit_age, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_label(
-    estimate = "OR",
-    term = "Variable"
-  )
-
-uni_age
-```
-
-
-Sex     
-```{r}
-fit_sex <- clm(atelectasis_percent~sex,
-               data = data_prop, 
-               link = "logit", threshold = "flexible")
-
-summary(fit_sex)
-```
-
-```{r}
-nominal_test(fit_sex)
-```
-
-
-```{r}
-scale_test(fit_sex)
-```
-
-Proportional odds assumption met and no scale effects for Sex.     
-
-```{r}
-uni_sex <- tidy(fit_sex, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_label(
-    estimate = "OR",
-    term = "Variable"
-  )
-
- uni_sex
-```
-
-
-Sleep Apnea        
-```{r}
-fit_OSA <- clm(atelectasis_percent~sleep_apnea,
-               data = data_prop, 
-               link = "logit", threshold = "flexible")
-
-summary(fit_OSA)
-```
-
-```{r}
-nominal_test(fit_OSA)
-```
-
-```{r}
-scale_test(fit_OSA)
-```
-
-Proportional odds assumption met and no scale effects for sleep apnea.       
-
-```{r}
-uni_OSA <- tidy(fit_OSA, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_label(
-    estimate = "OR",
-    term = "Variable"
-  )
-
-uni_OSA
-```
-
-
-
-This modelling approach with collapsed factors is way more stable. Thus, will proceed with this modelling approach.   
-
-## Multivariable model   
-
-```{r}
-#| warning: true
-fit_multi <- clm(atelectasis_percent ~ type_obesity + age + sex + sleep_apnea,
-                 data = data_prop, 
-                 link = "logit", threshold = "flexible")
-
-summary(fit_multi)
-```
-
-Convergence: 
-```{r}
-convergence(fit_multi)
-```
-
-
-Check proportional odds assumption:   
-```{r}
-#| warning: true
-nominal_test(fit_multi)
-```
-
-Proportional odds OK for all variables except obesity type (as already expected) and age, but proportional odds assumption is not as relevant for covariates.  
-
-Check for scale effects:    
-```{r}
-scale_test(fit_multi)
-```
-
-No scale effects, good news.   
-
-Summarize results in table:   
-```{r}
-multi <- tidy(fit_multi, conf.int = T, conf.type = "profile") %>%
-  transmute(
-    term, across(c(estimate, conf.low, conf.high), exp)
-  ) %>%
-  gt() %>%
-  fmt_number(c(estimate, conf.low, conf.high), decimals = 2) %>% 
-  cols_label(
-    estimate = "OR",
-    term = "Variable"
-  )
-
-multi
-```
-
-## Table 3   
-
-```{r}
-table_BMI <- data.frame(uni_BMI) %>% 
-  dplyr::slice(-(1:3))
-
-table_age <- data.frame(uni_age) %>% 
-  dplyr::slice(-(1:3))
-
-table_sex <- data.frame(uni_sex) %>% 
-  dplyr::slice(-(1:3))
-
-table_OSA <- data.frame(uni_OSA) %>% 
-  dplyr::slice(-(1:3))
-
-table_uni <- rbind(table_BMI,table_age,table_sex,table_OSA) 
-
-table_multi <- data.frame(multi) %>% 
-  dplyr::slice(-(1:3)) %>% 
-  rename(
-    term2 = term, 
-    aOR = estimate,
-    low = conf.low,
-    high = conf.high
-  )
-  
-table3 <- cbind(table_uni, table_multi) %>% 
-  gt() %>% 
-  cols_merge(c(conf.low, conf.high),
-             pattern = "{1}&mdash;{2}") %>% 
-  cols_merge(c(low, high),
-             pattern = "{1}&mdash;{2}") %>% 
-  cols_label(
-    conf.low = "95%CI",
-    low = "95%CI",
-    estimate = "OR",
-    term = "Variable"
-    ) %>% 
-  cols_hide(term2) %>% 
-  sub_values(values = "type_obesity2", replacement = "Class 2") %>% 
-  sub_values(values = "type_obesity3", replacement = "Class 3") %>% 
-  sub_values(values = "age", replacement = "Age") %>%
-  sub_values(values = "sexWoman", replacement = "Sex") %>%
-  sub_values(values = "sleep_apneaYes", replacement = "OSA")  
-
-# There is currently a problem when converting to docx. Hence, I am rendering
-# to html instead.  
-table3 %>% gtsave(filename = "Table3.html", path = tabfolder)
-
-table3
-```
-
-
-```{r}
-#| include: false
-rm(list=setdiff(ls(pattern = "^fit"), lsf.str()))
-rm(list=setdiff(ls(pattern = "^table"), lsf.str()))
-rm(list=setdiff(ls(pattern = "^uni"), lsf.str()))
-rm(list=setdiff(ls(pattern = "^multi"), lsf.str()))
-```
-
-
-# Partial proportional odds model:   
-
-As mentioned before, a partial proportional odds model could be useful in understanding patterns leading to not meeting proportional odds assumption. Thus, I will fit a partial proportional odds model.   
-
-The **loglog** function remains the better function to fit a model with nominal component for type_obesity.   
-```{r}
-#| include: true 
-## Change 'false' for 'true' above to show results 
-
-data_prop %>%
-  nest(data = everything()) %>%
- crossing(
-    link = c("logit", "probit", "cloglog", "loglog", "cauchit"),
-    threshold = c("flexible", "equidistant")
-  ) %>%
-  mutate(
-    mod = map2(
-      data, link,
-      ~clm(atelectasis_percent ~ sex + age + sleep_apnea, nominal = ~ type_obesity,
-        data = .x, link = .y
-      )
-    )
-  ) %>%
-  mutate(
-    mod_summary = map(
-      mod,
-      ~glance(.x) %>% mutate(logLik = as.numeric(logLik))
-    )
-  ) %>%
-  unnest(mod_summary) %>%
-  dplyr::select(link, threshold, logLik, edf, AIC, BIC) %>%
-  arrange(logLik) %>%
+data.frame(t(impact_PO$stats)) %>% 
+  `colnames<-`(NULL)  %>%
+  `colnames<-`(.[1, ]) %>% 
+  rownames_to_column() %>% 
+  dplyr::slice(-1) %>% 
+  mutate(PO = replace_na(PO," ")) %>% 
   gt()
 ```
 
-## Univariable model     
-```{r}
-fit_BMIpartuni <- vglm(atelectasis_percent ~ type_obesity, 
-                       data=data_prop, 
-                       link="probit",
-                       family = cumulative(
-                         parallel=FALSE ~ type_obesity,
-                         reverse = TRUE
-                         )
-                       )
+Lowest AIC is for the proportional odds (PO) model. Likewise, the McFadden adjusted R2 is the highest for the PO model. Thus, I will present the PO model despite proportional odds assumption not met as this is not causing serious problems and seems to be the best model according to the results shown and discussed.
 
-summary(fit_BMIpartuni)
-```
-
-Due to Hauck-Donner effect for one of the intercept estimates, LRT and profile confidence intervals would be more appropriate. 
-
-Likelihood ratio test:   
-```{r}
-#| warning: false
-summary(fit_BMIpartuni, lrt0 = TRUE)
-```
-
-
-
-
-Since computation of LR confidence intervals is computationally intensive, a quickfit is needed as described in [Yee TW: Vector Generalized Linear and Additive Models. New York, NY, Springer New York, 2015 doi:10.1007/978-1-4939-2818-7](https://link.springer.com/book/10.1007/978-1-4939-2818-7):     
+## Univariate models for covariates:
 
 ```{r}
-quickfit <- vglm.fit(
-  y = depvar(fit_BMIpartuni),
-  etastart = predict(fit_BMIpartuni), # Faster convergence if used
-  coefstart = coef(fit_BMIpartuni),
-  x = model.matrix(fit_BMIpartuni, type = "lm"),
-  family = fit_BMIpartuni@family,
-  Terms = terms(fit_BMIpartuni), # This may need hacking
-  constraints = constraints(fit_BMIpartuni, type = "term"),
-  control = fit_BMIpartuni@control
-  )
+fit_OSA <- orm(atelectasis_percent ~ sleep_apnea,
+    data = data
+    )
 
+fit_OSA
 ```
 
 ```{r}
-fit_BMIpartuni2 <- vglm(atelectasis_percent ~ type_obesity, 
-                       data=data_prop, 
-                       link="probit",
-                       coefstart = coef(fit_BMIpartuni),
-                       family = quickfit$family,
-                       etastart = quickfit$etastart,
-                       control = fit_BMIpartuni@control,
-                       constraints = constraints(fit_BMIpartuni, type = "term")
-                       )
-
-summary(fit_BMIpartuni2)
+summary(fit_OSA)
 ```
 
 ```{r}
-confint_BMIpartuni <- confintvglm(fit_BMIpartuni,
-                                  method = "profile"
-                                  )
-confint_BMIpartuni
+fit_sex <- orm(atelectasis_percent ~ sex,
+    data = data
+    )
 
-```
-
-## Multivariable model  
-Fit a model that allows proportional odds for all explanatory variables, except type obesity:    
-```{r}
-#| warning: false
-fit_BMIpart <- vglm(atelectasis_percent ~ type_obesity+sleep_apnea+sex+age, 
-                    data=data_prop, 
-                    link="loglog", 
-                    family=cumulative(
-                      parallel=FALSE~type_obesity, 
-                      reverse = TRUE
-                      )
-                    )
+fit_sex
 ```
 
 ```{r}
-summary(fit_BMIpart)
-```
-
-There are some problems due to Hauck-Donner effect in estimates. This can make estimates be non-significant with the p-values calculated with a Wald test. Thus, I will calculate p-values and confidence intervals based on the likelihood ratio test:   
-
-```{r}
-#| warning: false
-confint <- cbind(coef(summary(fit_BMIpart)),
-"signed LRT stat" = lrt.stat(fit_BMIpart, omit1s = FALSE))
-confint
+summary(fit_sex, sex = "Man")
 ```
 
 ```{r}
-#| warning: false
-summary(quickfit, lrt0 = TRUE)
-```
+fit_age <- orm(atelectasis_percent ~ age,
+    data = data
+    )
 
-
-AIC
-```{r}
-AIC(fit_BMIpart)
+fit_age
 ```
 
 ```{r}
-confint_BMIpart <- confintvglm(fit_BMIpart,
-                              method = "profile")
-confint_BMIpart
-
-debugonce(confintvglm)
+summary(fit_age)
 ```
 
-```{r, include=FALSE}
-rm(fit_BMIpart,confint_BMIpart,fit_BMIpartuni,confint_BMIpart)
+## Multivariable model
+
+```{r}
+fit_multi <- orm(atelectasis_percent ~ type_obesity +
+                   sleep_apnea + sex + age,
+                 data = data,
+                 )
+
+fit_multi
 ```
 
+```{r}
+summary(fit_multi, type_obesity = "1", sex = "Man")
+```
 
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+pacman::p_unload(negate = TRUE)
+
+rm(list=setdiff(ls(pattern = "^fit"), lsf.str()))
+rm(data, data_prop, dd, impact_PO, figfolder, tabfolder)
+```
