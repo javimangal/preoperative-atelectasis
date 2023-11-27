@@ -5,7 +5,8 @@
   </a>
 </p>
 
-[![](<https://img.shields.io/badge/Dataverse DOI-10.7910/DVN/4JZZLB-red>)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB)
+[![DOI](https://zenodo.org/badge/721526178.svg)](https://zenodo.org/doi/10.5281/zenodo.10211241)
+[![Dataverse](<https://img.shields.io/badge/Dataverse DOI-10.7910/DVN/4JZZLB-red>)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB)
 
 # Description 
 This repository contains the documentation for reproducibility of the study "Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study". The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The manuscript for this study will be made public shortly as a preprint.     
