@@ -18,7 +18,7 @@ In order to replicate these analyses, I suggest that the user follows these step
 3. You should have all the files with an identical folder structure describe in the section bellow in you computer.   
 4. In the main directory, open the file named ***preoperative_atelectasis.Rproj*** in RStudio.  
 5. You can navigate through the folders on the right-bottom panel. Open the **R** folder. You should now see a series of files starting with ***Part_*** and ending with ***.qmd***.   
-6. Open one of these files. You can run every chunk of code sequentially to reproduce the analyses. Make sure to respect the order and if something fails, I recommend that you start running al chunks of code from the beginning. If you don't know how to run a chunk of code, you can [imitate what this person is doing](https://youtu.be/RPF6gGyeJmg?feature=shared&t=30).   
+6. Open one of these files. You can run every chunk of code sequentially to reproduce the analyses. Make sure to respect the order and if something fails, I recommend that you start running al chunks of code from the beginning. If you don't know how to run a chunk of code, you can [imitate what this person is doing](https://youtu.be/RPF6gGyeJmg?feature=shared&t=30). If you get a message saying "Access denied", change from *Visual* to *Source* mode which can be done with the Ctrl+Shift+F4 command.       
 
 If you are not able to follow steps 2 to 5, you can alternatively download all of the files in this repository and replicate the same folder structure in your computer. After making sure that you have all files in the correct order, you can manually navigate to the **preoperative-atelectasis/R** folder in your computer and follow the step 6 described above.   
 
@@ -61,11 +61,12 @@ The project structure distinguishes three kinds of folders:
 └── R                     <- Source code for this project (HW)
 │   ├── scripts           <- Scripts sourced in main R markdown documents (PG)
 │   └── sessions          <- Text files with information of R sessions (PG)
+└── renv                  <- Packaging dependencies (RO)
 
 ```
 
 ## Documentation 
-The full documentation with comments of statistical analyses can be found in the [reports folder](docs/reports). Each PDF file documents sequential parts of the analyses, identified as Part 1 to Part 7 files as mentioned before. These reports describe the operating system plus R and package versions dependencies to reproduce each part of the analyses. It is my plan to publish these reports as html files in the short-term for better integration of documentation and intuitive navigation, as well as including a [Binder](https://mybinder.org/) where all analyses can be replicated without the need of installing any software.  
+The full documentation with comments of statistical analyses can be found in the [reports folder](docs/reports). Each PDF file documents sequential parts of the analyses, identified as Part 1 to Part 7 files as mentioned before. These reports describe the operating system of R and package versions dependencies to reproduce each part of the analyses. It is my plan to publish these reports as html files in the short-term for better integration of documentation and intuitive navigation. I have also included package dependencies in the **renv** folder in a lockfile. My aim for the next days is to test that all analyses can be run in a different computer as well as including a [Binder](https://mybinder.org/) where all analyses can be replicated without the need of installing any software.  
 
 ## License
 This project is licensed under the terms of the [MIT License](/LICENSE).

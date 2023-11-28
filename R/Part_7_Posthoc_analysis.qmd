@@ -492,14 +492,21 @@ Figure 2 created with sourced script ***Figure2.R***
 
 ```{r}
 #| include: false
+
+# Will colapse atelectasis percent category to avoid misinterpretation of plot.  
+data$atelectasis_percent[data$atelectasis_percent==27.5] <- 17.5
+
+detach(data)
+attach(data)
+
 source("scripts/Figure2.R")
 ```
 
-![Figure 2. Atelectasis percentage on chest CT by obesity categories.](images/Figure2-01.jpg)
+![Figure 2. Atelectasis percentage on chest CT by obesity categories.](images/Figure2.jpg)
 
 ```{r}
 #| include: false
-rm(mean_exp,frequencies,percent,frequencies,chi,Figure2,Figure2b,Figure2a,
+rm(mean_exp,frequencies,percent,frequencies,chi,Figure2,
    prop_fig2a,prop_fig2b,prop_fig2b_sub)
 ```
 
@@ -532,8 +539,6 @@ This modelling strategy was performed according to:\
 - [Harrel, Frank. March, 2022. "Assessing the Proportional Odds Assumption and its Impact". Statistical Thinking. March 9, 2022.](https://www.fharrell.com/post/impactpo/index.html#overall-efficacy-assessment)
 
 ```{r}
-# Will colapse atelectasis percent category as done before  
-data$atelectasis_percent[data$atelectasis_percent==27.5] <- 17.5
 
 # Will accomodate atelectasis percent to be ordered for modelling. 
 data <- data %>% 
@@ -650,6 +655,12 @@ As I mentioned, I previously tried fitting a PPO model with `VGAM` and I couldn'
 ## Univariate models for covariates:
 
 ```{r}
+#| include: false
+
+detach(data)
+```
+
+```{r}
 fit_OSA <- orm(atelectasis_percent ~ sleep_apnea,
     data = data
     )
@@ -704,8 +715,6 @@ summary(fit_multi, type_obesity = "30-35", sex = "Man")
 #| include: false
 
 # Run this chunk if you wish to clear your environment and unload packages.
-
-detach(data)
 
 pacman::p_unload(negate = TRUE)
 

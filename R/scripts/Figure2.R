@@ -7,8 +7,8 @@ prop_fig2a <- prop.table(frequencies,margin=2)
 ### Create and save 
 png(filename=paste0(figfolder,"/Figure2a.png"),width=8, height=5, units="in", res=300)
 barplot(prop_fig2a,beside=TRUE,ylim=c(0,1),ylab="Relative frequency",
-        col=brewer.pal(9,"Blues"),
-        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%","27.5%"),
+        col=brewer.pal(8,"Blues"),
+        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","≥17.5%"),
         space = c(0.2, 1.5)
 )
 dev.off()
@@ -27,8 +27,8 @@ barplot(prop_fig2b,
         ylim=c(0,1),
         xlim=c(1,65),
         ylab="Relative frequency",
-        col=brewer.pal(9,"Blues"),
-        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%","27.5%"),
+        col=brewer.pal(8,"Blues"),
+        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","≥17.5%"),
         space = c(0.2, 1.5)
 )
 dev.off()
@@ -39,7 +39,7 @@ dev.off()
 
 
 ### I only want to show frequencies for the subcategories of class 3 obesity.
-prop_fig2b_sub <- prop_fig2b[1:9,3:5]
+prop_fig2b_sub <- prop_fig2b[1:8,3:5]
 
 # Rebuild plot and stack them
 png(filename=paste(figfolder,"/Figure2.jpg",sep=""),width=8, height=5, units="in", res=300)
@@ -48,7 +48,7 @@ par(mgp=c(0,2,0))
 barplot(prop_fig2a,beside=TRUE,ylim=c(0,1),yaxt='n',
         main="A",adj=0,
         names.arg=expression(atop("[30,35)","Class 1"),atop("[35,40)","Class 2"),atop("≥40","Class 3")),
-        col=brewer.pal(9,"Blues"),
+        col=brewer.pal(8,"Blues"),
         space = c(0.2, 1.5), 
         cex.axis = 0.9, cex.names = 0.9
 )
@@ -59,10 +59,11 @@ par(mgp=c(2,0.5,0))
 barplot(prop_fig2b_sub,beside=TRUE,ylim=c(0,1),
         main="B",adj=0,
         xlab="         Class 3 subgroups (kg/m²)", cex.lab = 0.9,
-        col=brewer.pal(9,"Blues"),
-        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%","27.5%"),
+        col=brewer.pal(8,"Blues"),
+        legend.text=c("0%","2.5%","5%","7.5%","10%","12.5%","15%","≥17.5%"),
         args.legend = c(y=1.1,cex=0.8),
         space = c(0.2, 1.5), 
         cex.axis = 0.9, cex.names = 0.9
 )
+Figure2 <- recordPlot()
 dev.off()
