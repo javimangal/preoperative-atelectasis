@@ -3,8 +3,6 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 7: Posthoc Analyses"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
-project: 
-    output-dir: ../docs/reports
 execute: 
   echo: false
   warning: false
@@ -529,8 +527,9 @@ Note that in this model the PR for class 2 obesity changed slightly. Nonetheless
 
 ```{r}
 #| include: false 
-rm(dataprev, poisson_fit, covmat, se, model_output, model_output2,
-   table_output, table_output2, table2)
+rm(list=setdiff(ls(pattern = "prev"), lsf.str()))
+rm(list=setdiff(ls(pattern = "output"), lsf.str()))
+rm(poisson_fit, covmat, se, table2)
 ```
 
 # Ordinal Logistic Regression Model

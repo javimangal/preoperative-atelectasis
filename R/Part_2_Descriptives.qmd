@@ -3,7 +3,6 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 2: Descriptive characteristics and map"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
-output-dir: /docs/reports
 execute: 
   echo: true
   warning: false

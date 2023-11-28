@@ -3,8 +3,6 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 6: Statistical Modelling of SpO2"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
-project: 
-    output-dir: ../docs/reports
 execute: 
   echo: false
   warning: false

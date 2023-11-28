@@ -3,8 +3,6 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 4: Outcomes"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
-project: 
-    output-dir: ../docs/reports
 execute: 
   echo: false
   warning: false
@@ -394,6 +392,40 @@ boot_ci_class3
 ```
 
 > The mean atelectasis percentage coverage in the sample was `r round(mean_boot,2)`% (95%CI:`r round(boot_ci$bca[1,4],2)`-`r round(boot_ci$bca[1,5],2)`) and according to obesity categories: class 1 (`r round(mean_boot_class1,2)`%, 95%CI:`r round(boot_ci_class1$bca[1,4],2)`-`r round(boot_ci_class1$bca[1,5],2)`), class 2 (`r round(mean_boot_class2,2)`%, 95%CI:`r round(boot_ci_class2$bca[1,4],2)`-`r round(boot_ci_class2$bca[1,5],2)`), and class 3 (`r round(mean_boot_class3,2)`%, 95%CI:`r round(boot_ci_class3$bca[1,4],2)`-`r round(boot_ci_class3$bca[1,5],2)`).
+
+What could happen if I took random subsamples between n=20 and n=30 similar to what has been done in other studies and calculate mean BMI and mean atelectasis percentage assuming normal distributions?
+
+Random sample
+
+```{r}
+set.seed(seed)
+random_sample_1 <- sample_n(data,20)
+
+random_sample_1 %>% summarize(
+  mean_BMI =  mean(BMI),
+  mean_atelectasis = mean(atelectasis_percent)
+  ) 
+```
+
+```{r}
+set.seed(seed)
+random_sample_2 <- sample_n(data,25)
+
+random_sample_2 %>% summarize(
+  mean_BMI =  mean(BMI),
+  mean_atelectasis = mean(atelectasis_percent)
+  ) 
+```
+
+```{r}
+set.seed(seed)
+random_sample_3 <- sample_n(data,30)
+
+random_sample_3 %>% summarize(
+  mean_BMI =  mean(BMI),
+  mean_atelectasis = mean(atelectasis_percent)
+  ) 
+```
 
 ```{r}
 #| include: false

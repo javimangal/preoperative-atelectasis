@@ -6,7 +6,7 @@ Matrix products: default
 
 
 attached base packages:
-[1] splines   stats4    stats     graphics  grDevices utils     datasets 
+[1] splines   stats4    stats     graphics  grDevices datasets  utils    
 [8] methods   base     
 
 other attached packages:

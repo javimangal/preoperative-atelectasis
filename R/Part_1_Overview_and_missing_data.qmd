@@ -3,8 +3,6 @@ title: "Preoperative Atelectasis"
 subtitle: "Part 1: Overview, selection criteria, and missing data"
 author: "Javier Mancilla Galindo"
 date: "`r Sys.Date()`"
-project: 
-    output-dir: ../docs/reports
 execute: 
   echo: true
   warning: false
