@@ -484,9 +484,9 @@ chi <- chisq.test(frequencies, correct=TRUE)
 chi
 ```
 
-##### Figure 2
+##### Figure S3
 
-Figure 2 created with sourced script ***Figure2.R***
+Figure created with sourced script ***FigureS3.R***
 
 ```{r}
 #| include: false
@@ -497,15 +497,15 @@ data$atelectasis_percent[data$atelectasis_percent==27.5] <- 17.5
 detach(data)
 attach(data)
 
-source("scripts/Figure2.R")
+source("scripts/FigureS3.R")
 ```
 
-![Figure 2. Atelectasis percentage on chest CT by obesity categories.](images/Figure2.jpg)
+![Figure S3. Atelectasis percentage on chest CT by obesity categories.](images/Figure2.jpg)
 
 ```{r}
 #| include: false
-rm(mean_exp,frequencies,percent,frequencies,chi,Figure2,
-   prop_fig2a,prop_fig2b,prop_fig2b_sub)
+rm(mean_exp,frequencies,percent,chi,FigureS3,
+   prop_figS3a,prop_figS3b,prop_figS3b_sub)
 ```
 
 # Prevalence Ratio
@@ -680,7 +680,7 @@ fit_sex
 ```
 
 ```{r}
-summary(fit_sex, sex = "Man")
+summary(fit_sex, sex = "Woman")
 ```
 
 ```{r}
@@ -707,7 +707,7 @@ fit_multi
 ```
 
 ```{r}
-summary(fit_multi, type_obesity = "30-35", sex = "Man")
+summary(fit_multi, type_obesity = "30-35", sex = "Woman")
 ```
 
 ```{r}

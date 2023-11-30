@@ -31,6 +31,7 @@ I recommend that the **.qmd** files are opened and run in sequential order, alth
 * [Part 5](R/Part_5_Statistical_Modelling_Atelectasis.qmd). Statistical modelling: Atelectasis. [PDF](docs/reports/Part_5_Statistical_Modelling_Atelectasis.pdf)   
 * [Part 6](R/Part_6_Statistical_Modelling_SpO2.qmd). Statistical modelling: SpO2. [PDF](docs/reports/Part_6_Statistical_Modelling_SpO2.pdf)    
 * [Part 7](R/Part_7_Posthoc_analysis.qmd). Posthoc analyses. [PDF](docs/reports/Part_7_Posthoc_analysis.pdf)   
+* [Part 8](R/Part_8_Statistical_Modelling_SpO2.qmd). Statistical modelling: SpO2 without removing outliers. [PDF](docs/reports/Part_8_Statistical_Modelling_SpO2.pdf)  
 
 ## Project Structure
 
@@ -54,7 +55,8 @@ The project structure distinguishes three kinds of folders:
 │   └── temp              <- Intermediate data that has been transformed. (PG)
 ├── docs                  <- Documentation for users (HW)
 │   ├── manuscript        <- Manuscript source, docx. (HW)
-│   └── reports           <- Project reports (.pdf) (HW)
+│   ├── reports           <- Project reports, pdf. (HW)
+│   └── DAG               <- Directed Acyclic Graph documentation, txt. (HG)
 ├── results
 │   ├── output_figures    <- Figures for the manuscript or reports (PG)
 │   └── output_tables     <- Output tables for the manuscript (PG)
@@ -66,7 +68,7 @@ The project structure distinguishes three kinds of folders:
 ```
 
 ## Documentation 
-The full documentation with comments of statistical analyses can be found in the [reports folder](docs/reports). Each PDF file documents sequential parts of the analyses, identified as Part 1 to Part 7 files as mentioned before. These reports describe the operating system of R and package versions dependencies to reproduce each part of the analyses. It is my plan to publish these reports as html files in the short-term for better integration of documentation and intuitive navigation. I have also included package dependencies in the **renv** folder in a lockfile. My aim for the next days is to test that all analyses can be run in a different computer as well as including a [Binder](https://mybinder.org/) where all analyses can be replicated without the need of installing any software.  
+The full documentation with comments of statistical analyses can be found in the [reports folder](docs/reports). Each PDF file documents sequential parts of the analyses, identified as Part 1 to Part 8 files as mentioned before. These reports describe the operating system of R and package versions dependencies to reproduce each part of the analyses. It is my plan to publish these reports as html files in the short-term for better integration of documentation and intuitive navigation. I have also included package dependencies in the **renv** folder in a lockfile. My aim for the next days is to test that all analyses can be run in a different computer as well as including a [Binder](https://mybinder.org/) where all analyses can be replicated without the need of installing any software.  
 
 ## License
 This project is licensed under the terms of the [MIT License](/LICENSE).

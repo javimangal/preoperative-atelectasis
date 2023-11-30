@@ -348,7 +348,7 @@ fit_sex
 ```
 
 ```{r}
-summary(fit_sex, sex = "Man")
+summary(fit_sex, sex = "Woman")
 ```
 
 ```{r}
@@ -375,7 +375,7 @@ fit_multi
 ```
 
 ```{r}
-summary(fit_multi, type_obesity = "1", sex = "Man")
+summary(fit_multi, type_obesity = "1", sex = "Woman")
 ```
 
 ```{r}

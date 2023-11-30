@@ -6,7 +6,7 @@ Matrix products: default
 
 
 attached base packages:
-[1] grid      stats     graphics  grDevices utils     datasets  methods  
+[1] grid      stats     graphics  grDevices datasets  utils     methods  
 [8] base     
 
 other attached packages:
