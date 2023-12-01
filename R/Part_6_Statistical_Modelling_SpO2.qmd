@@ -38,7 +38,8 @@ pacman::p_load(
   gtsummary, #Used to create table to summarize regression models.  
   gratia, #Used together with gglopt2 to create smooth partial effects plot 
         # from gam models.
-  metR # Used to plot predictions of SpO2.    
+  metR, # Used to plot predictions of SpO2.    
+  report #Used to cite packages used in this session.
 )
 ```
 
@@ -59,9 +60,6 @@ writeLines(
 )
 
 session
-
-rm(session)
-
 ```
 
 ```{r}
@@ -113,7 +111,7 @@ Therefore, modelling SpO2 as a linear term could be potentially misleading. None
 
 Thus, I first created model SpO2 assuming a gaussian distribution and then applied a fractional regression model which is more appropriate for the distribution of this variable. The rationale for this was that if conclusions were not different with both models, presenting a model assuming a gaussian distribution would have been easier to understand and communicate. However, since conclusions were indeed different, I will present the results for the more appropriate fractional regression model.
 
-As a last note, I first assessed the relationships between variables without removing any outliers. Examination of residuals showed that there were some influential outliers having an impact on the models. Thus, I decided to remove a total of 4 outliers only for the SpO2 models shown here (3 for the SpO2 ~ BMI relationship and 1 for SpO2 ~ atelectasis percent). This document presents the results of analyses after removing outliers. Results of models for the total sample before exclusion of outliers are presented in ***Part 8***.    
+As a last note, I first assessed the relationships between variables without removing any outliers. Examination of residuals showed that there were some influential outliers having an impact on the models. Thus, I decided to remove a total of 4 outliers only for the SpO2 models shown here (3 for the SpO2 \~ BMI relationship and 1 for SpO2 \~ atelectasis percent). This document presents the results of analyses after removing outliers. Results of models for the total sample before exclusion of outliers are presented in ***Part 8***.
 
 ## Fractional regression model
 
@@ -138,7 +136,7 @@ R2_empty <- summary(model)$r.sq
 dev_empty <- summary(model)$dev.expl
 ```
 
-#### BMI residuals   
+#### BMI residuals
 
 Model with a smooth BMI term as the only explanatory variable.
 
@@ -164,7 +162,8 @@ par(mfrow=c(1,1))
 gam.check(model_BMI)
 ```
 
-There are influential residuals. Will assess which of these could be removed according to Cook's distance.     
+There are influential residuals. Will assess which of these could be removed according to Cook's distance.
+
 ```{r}
 #| echo: true
 data %>% 
@@ -177,18 +176,18 @@ data %>%
   gt()
 ```
 
-I will remove such residuals:   
+I will remove such residuals:
+
 ```{r}
 #| echo: true
 data <- data %>% filter(!ID %in% c("71","122","166"))
 ```
 
-Now, I will examine atelectasis percentage:   
+Now, I will examine atelectasis percentage:
 
-#### Atelectasis percent residuals   
+#### Atelectasis percent residuals
 
-Greater explanation on why a smooth term for atelectasis percentage was kept instead of a categorical term can be found in ***Part 8***, as well as an explanation of the k value selected.  
-
+Greater explanation on why a smooth term for atelectasis percentage was kept instead of a categorical term can be found in ***Part 8***, as well as an explanation of the k value selected.
 
 ```{r}
 model_atel_smooth <- gam(spo2_fraction ~ s(atelectasis_percent,k=5),
@@ -209,7 +208,8 @@ summary(model_atel_smooth)
 gam.check(model_atel_smooth)
 ```
 
-Outliers:  
+Outliers:
+
 ```{r}
 #| echo: true
 data %>% 
@@ -222,13 +222,13 @@ data %>%
   gt()
 ```
 
-I will remove these outliers. 
+I will remove these outliers.
 
 ```{r}
 data <- data %>% filter(!ID %in% c("4","39","107","129","164","204"))
 ```
 
-#### BMI only model      
+#### BMI only model
 
 ```{r}
 model_BMI <- gam(spo2_fraction~s(BMI,k=8), 
@@ -252,8 +252,7 @@ plot(model_BMI)
 gam.check(model_BMI)
 ```
 
-
-#### Atelectasis percent model   
+#### Atelectasis percent model
 
 ```{r}
 model_atel_smooth <- gam(spo2_fraction ~ s(atelectasis_percent,k=5),
@@ -276,7 +275,6 @@ summary(model_atel_smooth)
 ```{r}
 gam.check(model_atel_smooth)
 ```
-
 
 #### OSA only
 
@@ -302,7 +300,6 @@ summary(model_OSA_only)
 
 gam.check(model_OSA_only)
 ```
-
 
 #### s(BMI) + s(atelectasis percentage)
 
@@ -383,7 +380,6 @@ summary(model_OSA_atel)
 ## Change 'false' for 'true' above to show plots.  
 plot(model_OSA_atel, all.terms=TRUE)
 ```
-
 
 ### Adjusted model BMI
 
@@ -539,14 +535,14 @@ models <- data.frame(
   )
 ```
 
-Models sorted by explained deviance (from higher to lower):   
+Models sorted by explained deviance (from higher to lower):
+
 ```{r}
 models <- models %>% mutate(aR2 = round(aR2,3)*100,
                             dev = round(dev,3)*100
                             )
 models %>% arrange(desc(dev)) %>% gt()
 ```
-
 
 ```{r}
 #| include: false 
@@ -612,11 +608,12 @@ tableS2 %>%
   gt::gtsave(filename = "TableS2.docx", path = tabfolder)
 ```
 
-# Figure SpO2 models  
+# Figure SpO2 models
 
 #### Figure 2a: sBMI
 
-Assessment of residuals. This was done for all models.   
+Assessment of residuals. This was done for all models.
+
 ```{r}
 #| include: true 
 ## Change 'false' for 'true' above to show plots.
@@ -847,7 +844,7 @@ plot2f <- draw(model_plus, select = "s(atelectasis_percent)",
 plot2f 
 ```
 
-#### Figure 2  
+#### Figure 2
 
 ```{r, fig.width=13, fig.height=8}
 figure2 <- grid.arrange(plot2a, plot2b, plot2c, plot2d, plot2e, plot2f, nrow = 2)
@@ -858,10 +855,10 @@ figure2 <- grid.arrange(plot2a, plot2b, plot2c, plot2d, plot2e, plot2f, nrow = 2
 ggsave("Figure2.png",plot=figure2,path=figfolder, width = 13,  height = 8, units = "in", dpi = 300)
 ```
 
+# Predictions SpO2
 
-# Predictions SpO2   
+These are the predicted SpO2 values in the fully adjusted model (adjusted_plus):
 
-These are the predicted SpO2 values in the fully adjusted model (adjusted_plus): 
 ```{r}
 #| warning: false
 #| echo: true
@@ -878,7 +875,7 @@ vis.gam(model_plus,
         )
 ```
 
-This figure shows that this model is not able to predict SpO2 values above 96%. The range of predicted values of SpO2 that can be predicted with the data and model created in this study are within 88-96%. Lines correspond to a level of SpO2, so it can be seen that most of these are almost perpendicular to the y axis, meaning that most of the decrease in SpO2 is driven by increasing atelectasis percentage. Nonetheless, lines are not perfectly horizontal, which reflects that there is some residual effect of BMI on SpO2. Furthermore, this model shows that drops in SpO2 are more accentuated at the lower part of atelectasis percentage extension (93% to 96% mostly occur at atelectasis percentage lower than 5%). At SpO2 92% and lower, jumps are not as accentuated and there is a greater effect of increasing BMI as the lines tend to be more inclined. A 3D plot could perhaps allow to visualize these patterns if this is not clear enough from the 2D plot:   
+This figure shows that this model is not able to predict SpO2 values above 96%. The range of predicted values of SpO2 that can be predicted with the data and model created in this study are within 88-96%. Lines correspond to a level of SpO2, so it can be seen that most of these are almost perpendicular to the y axis, meaning that most of the decrease in SpO2 is driven by increasing atelectasis percentage. Nonetheless, lines are not perfectly horizontal, which reflects that there is some residual effect of BMI on SpO2. Furthermore, this model shows that drops in SpO2 are more accentuated at the lower part of atelectasis percentage extension (93% to 96% mostly occur at atelectasis percentage lower than 5%). At SpO2 92% and lower, jumps are not as accentuated and there is a greater effect of increasing BMI as the lines tend to be more inclined. A 3D plot could perhaps allow to visualize these patterns if this is not clear enough from the 2D plot:
 
 ```{r}
 #| warning: false
@@ -895,9 +892,9 @@ vis.gam(model_plus,
         )
 ```
 
-### Figure 3   
+### Figure 3
 
-The 2D plot was recreated with the accompanying sourced script ***Figure3.R*** which also saves the 3D plot as FigureS4.   
+The 2D plot was recreated with the accompanying sourced script ***Figure3.R*** which also saves the 3D plot as FigureS4.
 
 ```{r}
 #| include: false
@@ -911,6 +908,36 @@ predictions_plot
 ```{r}
 observed_plot
 ```
+
+# Package References
+
+```{r}
+#| include: false
+report::cite_packages(session)
+```
+
+  - Auguie B (2017). _gridExtra: Miscellaneous Functions for "Grid" Graphics_. R package version 2.3, <https://CRAN.R-project.org/package=gridExtra>.
+  - Campitelli E (2021). _metR: Tools for Easier Analysis of Meteorological Fields_. doi:10.5281/zenodo.2593516 <https://doi.org/10.5281/zenodo.2593516>, R package version 0.14.1, <https://eliocamp.github.io/metR/>.
+  - Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” _Journal of Statistical Software_, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
+  - Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2023). _gt: Easily Create Presentation-Ready Display Tables_. R package version 0.10.0, <https://CRAN.R-project.org/package=gt>.
+  - Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). “Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption.” _CRAN_. <https://easystats.github.io/report/>.
+  - Müller K, Wickham H (2023). _tibble: Simple Data Frames_. R package version 3.2.1, <https://CRAN.R-project.org/package=tibble>.
+  - Neuwirth E (2022). _RColorBrewer: ColorBrewer Palettes_. R package version 1.1-3, <https://CRAN.R-project.org/package=RColorBrewer>.
+  - Pinheiro J, Bates D, R Core Team (2023). _nlme: Linear and Nonlinear Mixed Effects Models_. R package version 3.1-164, <https://CRAN.R-project.org/package=nlme>. Pinheiro JC, Bates DM (2000). _Mixed-Effects Models in S and S-PLUS_. Springer, New York. doi:10.1007/b98882 <https://doi.org/10.1007/b98882>.
+  - R Core Team (2023). _R: A Language and Environment for Statistical Computing_. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+  - Rich B (2023). _table1: Tables of Descriptive Statistics in HTML_. R package version 1.4.3, <https://CRAN.R-project.org/package=table1>.
+  - Rinker TW, Kurkiewicz D (2018). _pacman: Package Management for R_. version 0.5.0, <http://github.com/trinker/pacman>.
+  - Simpson G (2023). _gratia: Graceful ggplot-Based Graphics and Other Functions for GAMs Fitted using mgcv_. R package version 0.8.1, <https://gavinsimpson.github.io/gratia/>.
+  - Sjoberg D, Whiting K, Curry M, Lavery J, Larmarange J (2021). “Reproducible Summary Tables with the gtsummary Package.” _The R Journal_, *13*, 570-580. doi:10.32614/RJ-2021-053 <https://doi.org/10.32614/RJ-2021-053>, <https://doi.org/10.32614/RJ-2021-053>.
+  - Wickham H (2016). _ggplot2: Elegant Graphics for Data Analysis_. Springer-Verlag New York. ISBN 978-3-319-24277-4, <https://ggplot2.tidyverse.org>.
+  - Wickham H (2023). _forcats: Tools for Working with Categorical Variables (Factors)_. R package version 1.0.0, <https://CRAN.R-project.org/package=forcats>.
+  - Wickham H (2023). _stringr: Simple, Consistent Wrappers for Common String Operations_. R package version 1.5.1, <https://CRAN.R-project.org/package=stringr>.
+  - Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of Open Source Software_, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+  - Wickham H, François R, Henry L, Müller K, Vaughan D (2023). _dplyr: A Grammar of Data Manipulation_. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
+  - Wickham H, Henry L (2023). _purrr: Functional Programming Tools_. R package version 1.0.2, <https://CRAN.R-project.org/package=purrr>.
+  - Wickham H, Hester J, Bryan J (2023). _readr: Read Rectangular Text Data_. R package version 2.1.4, <https://CRAN.R-project.org/package=readr>.
+  - Wickham H, Vaughan D, Girlich M (2023). _tidyr: Tidy Messy Data_. R package version 1.3.0, <https://CRAN.R-project.org/package=tidyr>.
+  - Wood SN (2011). “Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models.” _Journal of the Royal Statistical Society (B)_, *73*(1), 3-36. Wood S, N., Pya, S"afken B (2016). “Smoothing parameter and model selection for general smooth models (with discussion).” _Journal of the American Statistical Association_, *111*, 1548-1575. Wood SN (2004). “Stable and efficient multiple smoothing parameter estimation for generalized additive models.” _Journal of the American Statistical Association_, *99*(467), 673-686. Wood S (2017). _Generalized Additive Models: An Introduction with R_, 2 edition. Chapman and Hall/CRC. Wood SN (2003). “Thin-plate regression splines.” _Journal of the Royal Statistical Society (B)_, *65*(1), 95-114.
 
 ```{r}
 #| include: false

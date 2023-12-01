@@ -36,8 +36,9 @@ pacman::p_load(
   mgcv, #Used to model non-linear relationships with a general additive model. 
   gt, #Used to present a summary of the results of regression models. 
   gtsummary, #Used to create table to summarize regression models.  
-  gratia #Used together with gglopt2 to create smooth partial effects plot 
+  gratia, #Used together with gglopt2 to create smooth partial effects plot 
         # from gam models.
+  report #Used to cite packages used in this session.
 )
 ```
 
@@ -58,9 +59,6 @@ writeLines(
 )
 
 session
-
-rm(session)
-
 ```
 
 ```{r}
@@ -792,6 +790,35 @@ plot3f
 figure <- grid.arrange(plot3a, plot3b, plot3c, plot3d, plot3e, plot3f, nrow = 2)
 ```
 
+# Package References
+
+```{r}
+#| include: false
+report::cite_packages(session)
+```
+
+  - Auguie B (2017). _gridExtra: Miscellaneous Functions for "Grid" Graphics_. R package version 2.3, <https://CRAN.R-project.org/package=gridExtra>.
+  - Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” _Journal of Statistical Software_, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
+  - Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2023). _gt: Easily Create Presentation-Ready Display Tables_. R package version 0.10.0, <https://CRAN.R-project.org/package=gt>.
+  - Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). “Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption.” _CRAN_. <https://easystats.github.io/report/>.
+  - Müller K, Wickham H (2023). _tibble: Simple Data Frames_. R package version 3.2.1, <https://CRAN.R-project.org/package=tibble>.
+  - Neuwirth E (2022). _RColorBrewer: ColorBrewer Palettes_. R package version 1.1-3, <https://CRAN.R-project.org/package=RColorBrewer>.
+  - Pinheiro J, Bates D, R Core Team (2023). _nlme: Linear and Nonlinear Mixed Effects Models_. R package version 3.1-164, <https://CRAN.R-project.org/package=nlme>. Pinheiro JC, Bates DM (2000). _Mixed-Effects Models in S and S-PLUS_. Springer, New York. doi:10.1007/b98882 <https://doi.org/10.1007/b98882>.
+  - R Core Team (2023). _R: A Language and Environment for Statistical Computing_. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+  - Rich B (2023). _table1: Tables of Descriptive Statistics in HTML_. R package version 1.4.3, <https://CRAN.R-project.org/package=table1>.
+  - Rinker TW, Kurkiewicz D (2018). _pacman: Package Management for R_. version 0.5.0, <http://github.com/trinker/pacman>.
+  - Simpson G (2023). _gratia: Graceful ggplot-Based Graphics and Other Functions for GAMs Fitted using mgcv_. R package version 0.8.1, <https://gavinsimpson.github.io/gratia/>.
+  - Sjoberg D, Whiting K, Curry M, Lavery J, Larmarange J (2021). “Reproducible Summary Tables with the gtsummary Package.” _The R Journal_, *13*, 570-580. doi:10.32614/RJ-2021-053 <https://doi.org/10.32614/RJ-2021-053>, <https://doi.org/10.32614/RJ-2021-053>.
+  - Wickham H (2016). _ggplot2: Elegant Graphics for Data Analysis_. Springer-Verlag New York. ISBN 978-3-319-24277-4, <https://ggplot2.tidyverse.org>.
+  - Wickham H (2023). _forcats: Tools for Working with Categorical Variables (Factors)_. R package version 1.0.0, <https://CRAN.R-project.org/package=forcats>.
+  - Wickham H (2023). _stringr: Simple, Consistent Wrappers for Common String Operations_. R package version 1.5.1, <https://CRAN.R-project.org/package=stringr>.
+  - Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of Open Source Software_, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+  - Wickham H, François R, Henry L, Müller K, Vaughan D (2023). _dplyr: A Grammar of Data Manipulation_. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
+  - Wickham H, Henry L (2023). _purrr: Functional Programming Tools_. R package version 1.0.2, <https://CRAN.R-project.org/package=purrr>.
+  - Wickham H, Hester J, Bryan J (2023). _readr: Read Rectangular Text Data_. R package version 2.1.4, <https://CRAN.R-project.org/package=readr>.
+  - Wickham H, Vaughan D, Girlich M (2023). _tidyr: Tidy Messy Data_. R package version 1.3.0, <https://CRAN.R-project.org/package=tidyr>.
+  - Wood SN (2011). “Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models.” _Journal of the Royal Statistical Society (B)_, *73*(1), 3-36. Wood S, N., Pya, S"afken B (2016). “Smoothing parameter and model selection for general smooth models (with discussion).” _Journal of the American Statistical Association_, *111*, 1548-1575. Wood SN (2004). “Stable and efficient multiple smoothing parameter estimation for generalized additive models.” _Journal of the American Statistical Association_, *99*(467), 673-686. Wood S (2017). _Generalized Additive Models: An Introduction with R_, 2 edition. Chapman and Hall/CRC. Wood SN (2003). “Thin-plate regression splines.” _Journal of the Royal Statistical Society (B)_, *65*(1), 95-114.
+
 ```{r}
 #| include: false
 
@@ -799,7 +826,7 @@ figure <- grid.arrange(plot3a, plot3b, plot3c, plot3d, plot3e, plot3f, nrow = 2)
 
 pacman::p_unload(negate = TRUE)
 
-rm(data, figfolder, tabfolder, dataOSA, figure, table)
+rm(data, figfolder, tabfolder, dataOSA, figure, table, session)
 
 rm(list=setdiff(ls(pattern = "^plot3"), lsf.str()))
 rm(list=setdiff(ls(pattern = "^dev"), lsf.str()))
