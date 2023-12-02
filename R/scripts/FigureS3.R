@@ -47,7 +47,7 @@ layout(matrix(c(1,2), ncol=2), widths=c(5,5))
 par(mgp=c(0,2,0))  
 barplot(prop_figS3a,beside=TRUE,ylim=c(0,1),yaxt='n',
         main="A",adj=0,
-        names.arg=expression(atop("[30,35)","Class 1"),atop("[35,40)","Class 2"),atop("≥40","Class 3")),
+        names.arg=expression(atop("30-35","Class 1"),atop("35-40","Class 2"),atop("≥40","Class 3")),
         col=brewer.pal(8,"Blues"),
         space = c(0.2, 1.5), 
         cex.axis = 0.9, cex.names = 0.9

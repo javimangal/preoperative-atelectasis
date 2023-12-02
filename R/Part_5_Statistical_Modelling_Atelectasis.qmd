@@ -365,7 +365,7 @@ summary(fit_age)
 
 ```{r}
 fit_multi <- orm(atelectasis_percent ~ type_obesity +
-                   sleep_apnea + sex + age,
+                   sleep_apnea + sex + age + diabetes,
                  data = data,
                  )
 

@@ -9,7 +9,14 @@ for (variable in names(data)) {
   }
 
   if (variable == "sex") {
-    data$sex <- factor(data$sex)
+    data$sex <- data$sex %>% 
+      factor() %>% 
+      fct_recode("1"="Woman", "2"="Man") %>% 
+      as.character() %>% 
+      factor(
+        levels = c("1","2"),
+        labels = c("Woman","Man")
+        )
     table1::label(data$sex) <- "Sex"
   }
 

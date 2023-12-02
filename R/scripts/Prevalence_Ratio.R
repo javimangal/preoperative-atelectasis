@@ -119,7 +119,8 @@ model_output_prev_2
 
 
 ## Adjusted prevalence ratio  Class 2 Obesity
-poisson_fit <- glm(atelectasis ~ type_obesity + age + sex + sleep_apnea,
+poisson_fit <- glm(atelectasis ~ type_obesity + 
+                     age + sex + sleep_apnea,
                    data = dataprev_2,
                    family = poisson(link = log)
 )
