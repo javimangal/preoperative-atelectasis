@@ -12,7 +12,9 @@ dataprev <- data %>%
   ))
 
 # Prepare subset of BMI class 1 and 2:   
-dataprev_1 <- dataprev %>% filter(type_obesity == "30-35" | type_obesity == "40-45")
+dataprev_1 <- dataprev %>% 
+  filter(type_obesity == "30-35" | type_obesity == "40-45") %>% 
+  droplevels()
 
 poisson_fit <- glm(atelectasis ~ type_obesity,
                    data = dataprev_1,
@@ -48,9 +50,10 @@ model_output_prev_1
 
 
 ## Adjusted prevalence ratio  Class 2 Obesity
-poisson_fit <- glm(atelectasis ~ type_obesity + age + sex + sleep_apnea,
-                   data = dataprev_1,
-                   family = poisson(link = log)
+poisson_fit <- glm(
+  atelectasis ~ type_obesity + age + sex + altitude_cat,
+  data = dataprev_1,
+  family = poisson(link = log)
 )
 
 tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
@@ -83,7 +86,9 @@ model_output_prev_1_adj
 ## Crude prevalence ratio BMI 45-50  
 
 # Prepare subset of BMI class 1 and 3:   
-dataprev_2 <- dataprev %>% filter(type_obesity == "30-35" | type_obesity == "45-50")
+dataprev_2 <- dataprev %>% 
+  filter(type_obesity == "30-35" | type_obesity == "45-50") %>% 
+  droplevels()
 
 poisson_fit <- glm(atelectasis ~ type_obesity,
                    data = dataprev_2,
@@ -117,12 +122,15 @@ model_output_prev_2 <- as.data.frame(round(model_output_prev_2, 2))
 model_output_prev_2
 
 
-
 ## Adjusted prevalence ratio  Class 2 Obesity
-poisson_fit <- glm(atelectasis ~ type_obesity + age + sex + sleep_apnea,
-                   data = dataprev_2,
-                   family = poisson(link = log)
+poisson_fit <- glm(
+  atelectasis ~ type_obesity + age + sex + sleep_apnea + asthma,
+  data = dataprev_2,
+  family = poisson(link = log)
 )
+
+#No conversion when adjusting for altitude category. 
+#Thus, altitude category was excluded for adjustment in this model. 
 
 tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
 
@@ -153,7 +161,9 @@ model_output_prev_2_adj
 ## Crude prevalence ratio BMI >50    
 
 # Prepare subset of BMI class 1 and 3:   
-dataprev_3 <- dataprev %>% filter(type_obesity == "30-35" | type_obesity == "≥50")
+dataprev_3 <- dataprev %>% 
+  filter(type_obesity == "30-35" | type_obesity == "≥50") %>% 
+  droplevels()
 
 poisson_fit <- glm(atelectasis ~ type_obesity,
                    data = dataprev_3,
@@ -189,9 +199,10 @@ model_output_prev_3
 
 
 ## Adjusted prevalence ratio  Class 2 Obesity
-poisson_fit <- glm(atelectasis ~ type_obesity + age + sex + sleep_apnea,
-                   data = dataprev_3,
-                   family = poisson(link = log)
+poisson_fit <- glm(
+  atelectasis ~ type_obesity + age + sex + altitude_cat,
+  data = dataprev_3,
+  family = poisson(link = log)
 )
 
 tidy(poisson_fit, exponentiate = TRUE, conf.int = TRUE)
@@ -247,6 +258,43 @@ table_output <- rbind.data.frame(
   table_output_prev_3
   )
 
+#Calculate E-values for adjusted models   
+evalue_model_1 <- evalues.RR(
+  est = model_output_prev_1_adj$Estimate[2],
+  lo = model_output_prev_1_adj$Lower[2],
+  hi = model_output_prev_1_adj$Upper[2]
+) %>% 
+  data.frame %>% 
+  dplyr::slice(2)
+
+evalue_model_2 <- evalues.RR(
+  est = model_output_prev_2_adj$Estimate[2],
+  lo = model_output_prev_2_adj$Lower[2],
+  hi = model_output_prev_2_adj$Upper[2]
+) %>% 
+  data.frame %>% 
+  dplyr::slice(2)
+
+evalue_model_3 <- evalues.RR(
+  est = model_output_prev_3_adj$Estimate[2],
+  lo = model_output_prev_3_adj$Lower[2],
+  hi = model_output_prev_3_adj$Upper[2]
+) %>% 
+  data.frame %>% 
+  dplyr::slice(2)
+
+evalues <- rbind(
+  evalue_model_1,
+  evalue_model_2,
+  evalue_model_3
+) %>% 
+  select(-upper) %>% 
+  rename(
+    Evalue = point, 
+    Evalue_lower = lower) %>% 
+  round(2)
+
+
 # Merge output table for adjusted models:  
 table_output_prev_1_adj <- model_output_prev_1_adj %>%
   dplyr::slice(2) %>%
@@ -273,7 +321,7 @@ table_output2 <- rbind.data.frame(
   )
 
 # Merge two tables   
-table2 <- dplyr::bind_cols(table_output, table_output2) %>%
+table2 <- dplyr::bind_cols(table_output, table_output2, evalues) %>%
   rownames_to_column(var = "Category") %>%
   mutate_at("Category", str_replace, "type_obesity", "")
 

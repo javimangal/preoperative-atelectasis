@@ -1,0 +1,571 @@
+---
+title: "Preoperative Atelectasis"
+subtitle: "Part 8: Statistical Modelling of SpO2 ≤95% vs >95%)"
+author: "Javier Mancilla Galindo"
+date: "`r Sys.Date()`"
+execute: 
+  echo: false
+  warning: false
+toc: true
+toc_float: true
+format:
+  html:
+    embed-resources: true
+  pdf:
+    documentclass: scrartcl
+editor: visual
+---
+\pagebreak
+# Setup
+
+#### Packages used
+
+```{r}
+#| echo: true
+if (!require("pacman", quietly = TRUE)) {
+  install.packages("pacman")
+}
+
+
+pacman::p_load(
+  tidyverse, # Used for basic data handling and visualization.
+  table1, #Used to add lables to variables.
+  CBPS, #Used to calculate non-parametric propensity scores for IPW.  
+  WeightIt, #Used to calculate weights from propensity scores for IPW.   
+  mgcv, #Used to model non-linear relationships with a general additive model. 
+  boot, # Calculate bootstrap confidence intervals. 
+  gt, #Used to present a summary of the results of regression models. 
+  flextable, #Used to export tables.   
+  report #Used to cite packages used in this session.
+)
+```
+
+##### Session and package dependencies
+
+```{r}
+# Credits chunk of code: Alex Bossers, Utrecht University (a.bossers@uu.nl)
+
+session <- sessionInfo()
+# remove clutter
+session$BLAS <- NULL
+session$LAPACK <- NULL
+session$loadedOnly <- NULL
+# write log file
+writeLines(
+  capture.output(print(session, locale = FALSE)),
+  paste0("sessions/",lubridate::today(), "_session_Part_8.txt")
+)
+
+session
+```
+
+```{r}
+#| include: false
+
+# Create directories for sub-folders 
+figfolder <- "../results/output_figures"
+tabfolder <- "../results/output_tables"
+dir.create(figfolder, showWarnings = FALSE)
+dir.create(tabfolder, showWarnings = FALSE)
+```
+
+```{r}
+#| include: false
+
+# Load dataset  
+data_original <- read.csv("../data/processed/atelectasis_included.csv",
+                 na.strings="NA", 
+                 row.names = NULL)
+# Recode variables 
+source("scripts/variable_names.R")
+
+# Recreate variables created in: 
+## Part 2 (altitude category) and ## Part 4 (collapsed atelectasis percent): 
+data_original <- data_original %>% 
+  mutate(
+    altitude_cat = cut(altitude,
+                       breaks=c(0,1000,2500),
+                       right=FALSE,
+                       labels=c("Low altitude","Moderate altitude")
+                       )
+    )
+
+data_original$atelectasis_percent_factor <- factor(
+  data_original$atelectasis_percent, 
+  levels=c(0,2.5,5,7.5,10,12.5,15,17.5,27.5)
+  ) %>% 
+  fct_collapse("17.5%" = c(17.5,27.5)) %>% 
+  factor(labels = c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%"))
+
+data_original$atelectasis_percent[data_original$atelectasis_percent==27.5] <- 17.5
+```
+\pagebreak
+# Fractional regression model
+
+Convert SpO2 to fractional values between 0 and 1 to model.
+
+```{r}
+#| echo: true
+data_original <- data_original %>% mutate(spo2_fraction = spo2_VPO/100)
+```
+
+I will model separately by splitting the dataset into participants with SpO2 lower than or equal to 95 vs those with SpO2 higher than 95, according to what was shown in **Part 6**.
+
+```{r}
+#| include: false
+data_original <- data_original %>% 
+  mutate(spo2_cat = cut(
+    spo2_VPO,
+    breaks=c(87,95,100),
+    right=TRUE,
+    labels=c("≤95",">95")
+    )
+  )
+
+data_spo2_low <- data_original %>% 
+  filter(spo2_cat == "≤95")
+
+data_spo2_high  <- data_original %>% 
+  filter(spo2_cat == ">95")
+```
+
+I will first reload processed data with original calculated weights and excluded outliers as used in **Part 6**. For the final model estimates, new weights were obtained for a selection of participants with an SpO2 lower than or equal to 95, which will be explained in the corresponding section of this document.
+
+```{r}
+data <- read.csv("../data/processed/atelectasis_processed.csv",
+                 na.strings="NA", 
+                 row.names = NULL)
+
+# Recode variables 
+source("scripts/variable_names.R")
+```
+\pagebreak
+# SpO2 high
+
+## BMI model
+
+```{r}
+model_BMI_high_spo2 <- gam(
+  spo2_fraction~s(BMI,k=8),
+  data = data %>% filter(spo2_cat == ">95"),
+  family = quasibinomial(link = logit)
+  )
+
+summary(model_BMI_high_spo2)
+```
+
+```{r}
+plot(model_BMI_high_spo2)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plots.
+
+gam.check(model_BMI_high_spo2)
+```
+
+## Atelectasis percent
+
+```{r}
+data %>% filter(spo2_cat == ">95") %>% 
+  group_by(atelectasis_percent_factor) %>% 
+  summarize(n=n()) %>%
+  rename('Atelectasis percent' = atelectasis_percent_factor) %>% 
+  gt()
+```
+
+All patients with SpO2 higher than 95% have 0%. This shows that atelectasis percent and BMI are not relevant variables for SpO2 values above 95%.
+
+\pagebreak
+
+# SpO2 low
+
+## BMI model unadjusted
+
+```{r}
+model_BMI_low_spo2 <- gam(
+  spo2_fraction ~ s(BMI,k=8),
+  data = data %>% filter(spo2_cat == "≤95"),
+  family = quasibinomial(link = logit)
+  )
+
+summary(model_BMI_low_spo2)
+```
+
+```{r}
+plot(model_BMI_low_spo2)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plots.
+
+gam.check(model_BMI_low_spo2)
+```
+
+## Atelectasis percent model unadjusted
+
+```{r}
+model_atelectasis_low_spo2 <- gam(
+  spo2_fraction ~ s(atelectasis_percent,k=5),
+  data = data %>% filter(spo2_cat == "≤95"),
+  family = quasibinomial(link = logit)
+  )
+
+summary(model_atelectasis_low_spo2)
+```
+
+```{r}
+plot(model_atelectasis_low_spo2)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plots.
+
+gam.check(model_atelectasis_low_spo2)
+```
+
+## IPW model
+
+```{r}
+model_plus_spo2_low <- gam(spo2_fraction ~ s(BMI, k=8) + 
+                  s(atelectasis_percent,k=5),
+                data = data %>% filter(spo2_cat == "≤95"), 
+                weights = weight,
+                family = quasibinomial(link = logit)
+                )
+
+R2_plus <- summary(model_plus_spo2_low)$r.sq
+dev_plus <- summary(model_plus_spo2_low)$dev.expl
+```
+
+```{r}
+summary(model_plus_spo2_low)
+```
+
+```{r}
+plot(model_plus_spo2_low, all.terms=TRUE)
+```
+
+```{r}
+gam.check(model_plus_spo2_low)
+```
+
+## Test for interaction
+
+```{r}
+# This is only to explore the effect of a combined smooth term between 
+# BMI and atelectasis percentage, adjusted for confounders.  
+model_exp<-gam(spo2_fraction ~ s(BMI, atelectasis_percent), 
+               weights = weight,
+                data = data %>% filter(spo2_cat == "≤95"),
+                family = quasibinomial(link = logit)
+                )
+
+R2_interact <- summary(model_exp)$r.sq
+dev_interact <- summary(model_exp)$dev.expl
+
+summary(model_exp)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plots.
+
+gam.check(model_exp)
+```
+
+```{r}
+plot(model_exp)
+```
+
+## Effect mediation analysis assuming linearity
+
+If we would assume a linear relationship, this would allow to calculate the proportion mediated. Since the relationships in prior models did not deviate seriously from linear, I will model with linear terms and check distribution of residuals. If this suggests that assuming linearity results in good enough models in this subset of participants with SpO2 lower than or equal to 95%, I will calculate the proportion mediated to have an idea of how much of the effect of BMI on SpO2 is mediated by atelectasis.
+
+#### Direct and indirect effects
+
+```{r}
+model_linear <- gam(spo2_fraction ~ BMI + atelectasis_percent, 
+               weights = weight,
+                data = data %>% filter(spo2_cat == "≤95"),
+                family = quasibinomial(link = logit)
+                )
+
+direct_effect_BMI <- model_linear$coefficients[2]
+indirect_effect_BMI <- model_linear$coefficients[3]
+
+summary(model_linear)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plots.
+gam.check(model_linear)
+```
+
+```{r}
+plot(model_linear, all.terms = TRUE)
+```
+
+#### Total effect
+
+```{r}
+model_linear_BMI <- gam(spo2_fraction ~ BMI, 
+               weights = weight1,
+                data = data %>% filter(spo2_cat == "≤95"),
+                family = quasibinomial(link = logit)
+                )
+
+total_effect_BMI <- model_linear_BMI$coefficients[2]
+
+summary(model_linear_BMI)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plots.
+
+gam.check(model_linear_BMI)
+```
+
+#### Proportion mediated
+
+```{r}
+proportion_mediated <- round(
+  ((1-(direct_effect_BMI/total_effect_BMI))*100),
+  2)
+
+proportion_mediated
+```
+
+This model, however, could be biased due to selection (filtering has been done by conditioning on SpO2, which is a descendant and a collider). Therefore, reweighting after selection could provide a better estimate. Thus, I will obtain new weights for the pseudopopulation of participants with SpO2 lower than 95%. Since selection on a descendant (SpO2) likely introduced novel backdoor pathways, I will include all the ancestor variables of interest in the propensity score models, contrary to what I had done before. Despite this, it should be noted that additional novel backdoor pathways with other (un)measured confounders could still be latent, reason why the proportion mediated estimate shown here should be taken with some level of skepticism and interpreted as an approximate number of the proportion of the effect of BMI mediated by atelectasis percent, which could be biased.
+
+### Propensity scores
+
+Weights for exposure (BMI):
+
+```{r}
+data_spo2_low$weight1 <- weightit(
+  BMI ~ age + sex + altitude_cat + asthma + sleep_apnea + COPD,
+  data_spo2_low, 
+  method = "npcbps",
+  over = FALSE)$weights
+```
+
+Weights for mediator (atelectasis percent):
+
+```{r}
+data_spo2_low$weight2 <- weightit(
+  factor(atelectasis_percent, ordered = TRUE) ~ 
+    BMI + age + sex + altitude_cat + asthma + sleep_apnea + COPD,
+  data_spo2_low,
+  method = "npcbps")$weights
+```
+
+Overall weight:
+
+```{r}
+data_spo2_low <- data_spo2_low %>% 
+  mutate(
+  weight = weight1*weight2
+  )
+```
+
+### IPW linear model
+
+##### Direct and indirect effects
+
+```{r}
+model_linear_BMI_atelectasis <- gam(spo2_fraction ~ BMI + atelectasis_percent, 
+               weights = weight,
+                data = data_spo2_low,
+                family = quasibinomial(link = logit)
+                )
+
+direct_effect_BMI <- model_linear_BMI_atelectasis$coefficients[2]
+indirect_effect_BMI <- model_linear_BMI_atelectasis$coefficients[3]
+
+summary(model_linear_BMI_atelectasis)
+```
+
+```{r}
+gam.check(model_linear_BMI_atelectasis)
+```
+
+```{r}
+plot(model_linear_BMI_atelectasis, all.terms = TRUE)
+```
+
+##### Total effect
+
+```{r}
+model_linear_BMI <- gam(spo2_fraction ~ BMI, 
+               weights = weight1,
+                data = data_spo2_low,
+                family = quasibinomial(link = logit)
+                )
+
+total_effect_BMI <- model_linear_BMI$coefficients[2]
+
+summary(model_linear_BMI)
+```
+
+```{r}
+gam.check(model_linear_BMI)
+```
+
+##### Proportion mediated
+
+```{r}
+proportion_mediated <- round(
+  ((1-(direct_effect_BMI/total_effect_BMI))*100),
+  2)
+
+proportion_mediated
+```
+
+#### Outliers
+
+```{r}
+#| echo: true
+data_spo2_low %>% 
+  mutate(
+  cooksd = cooks.distance(model_linear_BMI_atelectasis),
+  outlier = ifelse(cooksd < 4/nrow(data_spo2_low), "keep","delete")
+) %>%
+  filter(outlier=="delete") %>% 
+  dplyr::select(ID,BMI,spo2_VPO,cooksd,outlier) %>% 
+  arrange(desc(cooksd)) %>% 
+  gt()
+```
+
+I will remove this very influential outlier (ID = 163)
+
+```{r}
+data_spo2_low_linear <- data_spo2_low %>% filter(!ID %in% "163")
+```
+
+##### Direct and indirect effects
+
+```{r}
+model_linear_BMI_atelectasis <- glm(
+  spo2_fraction ~ BMI + atelectasis_percent, 
+  weights = weight,
+  data = data_spo2_low_linear,
+  family = quasibinomial(link = logit)
+  )
+
+direct_effect_BMI <- model_linear_BMI_atelectasis$coefficients[2]
+indirect_effect_BMI <- model_linear_BMI_atelectasis$coefficients[3]
+
+summary(model_linear_BMI_atelectasis)
+```
+
+```{r}
+gam.check(model_linear_BMI_atelectasis)
+```
+
+##### Total effect
+
+```{r}
+model_linear_BMI <- glm(
+  spo2_fraction ~ BMI,
+  weights = weight1,
+  data = data_spo2_low_linear,
+  family = quasibinomial(link = logit)
+  )
+
+total_effect_BMI <- model_linear_BMI$coefficients[2]
+
+summary(model_linear_BMI)
+```
+
+```{r}
+gam.check(model_linear_BMI)
+```
+
+##### Proportion mediated
+
+```{r}
+proportion_mediated <- round(
+  ((1-(direct_effect_BMI/total_effect_BMI))*100),
+  2)
+
+proportion_mediated
+```
+
+As it can be seen from the models, the proportion mediated estimate is quite sensible to decisions in analysis. (i.e., removing outliers, obtaining new weights, etc). Nonetheless, the overall message remains the same: the proportion mediated is rather high, in the magnitude of 80 to 92%.
+
+I will obtain the confidence intervals for the proportion mediated of this last estimate of 81.49%:
+
+The confidence intervals for the proportion mediated werre calculated with the sourced script ***confidence_intervals_proportion_mediated.R***.
+
+```{r}
+source("scripts/confidence_intervals_proportion_mediated.R")
+conf_interval 
+```
+
+Note that the proportion mediated should not include values higher than 1. Therefore, I will truncate the upper boundary value of the confidence interval for the reporting. Fortunately, this confidence interval somehow reflects how decisions in analysis can lead to such different estimates, which are contained in this confidence interval.
+
+### Confidence intervals for the coefficients.
+
+I will calculate confidence intervals with bootstrapping since confidence intervals from the weighted model would be incorrectly narrow due to weights.
+
+Confidence intervals and OR calculated with the accompanying sourced script ***confidence_intervals_mediation.R***.
+
+### Supplementary Table   
+
+```{r}
+source("scripts/confidence_intervals_mediation.R")
+tableS %>% gt
+```
+
+\pagebreak
+
+# Package References
+
+```{r}
+#| include: false
+report::cite_packages(session)
+```
+
+-   Angelo Canty, B. D. Ripley (2024). *boot: Bootstrap R (S-Plus) Functions*. R package version 1.3-30. A. C. Davison, D. V. Hinkley (1997). *Bootstrap Methods and Their Applications*. Cambridge University Press, Cambridge. ISBN 0-521-57391-2, <doi:10.1017/CBO9780511802843>.
+-   Bates D, Maechler M, Jagan M (2024). *Matrix: Sparse and Dense Matrix Classes and Methods*. R package version 1.6-5, <https://CRAN.R-project.org/package=Matrix>.
+-   Fong C, Ratkovic M, Imai K (2022). *CBPS: Covariate Balancing Propensity Score*. R package version 0.23, <https://CRAN.R-project.org/package=CBPS>.
+-   Friedman J, Tibshirani R, Hastie T (2010). “Regularization Paths for Generalized Linear Models via Coordinate Descent.” *Journal of Statistical Software*, *33*(1), 1-22. doi:10.18637/jss.v033.i01 <https://doi.org/10.18637/jss.v033.i01>. Simon N, Friedman J, Tibshirani R, Hastie T (2011). “Regularization Paths for Cox's Proportional Hazards Model via Coordinate Descent.” *Journal of Statistical Software*, *39*(5), 1-13. doi:10.18637/jss.v039.i05 <https://doi.org/10.18637/jss.v039.i05>. Tay JK, Narasimhan B, Hastie T (2023). “Elastic Net Regularization Paths for All Generalized Linear Models.” *Journal of Statistical Software*, *106*(1), 1-31. doi:10.18637/jss.v106.i01 <https://doi.org/10.18637/jss.v106.i01>.
+-   Gilbert P, Varadhan R (2019). *numDeriv: Accurate Numerical Derivatives*. R package version 2016.8-1.1, <https://CRAN.R-project.org/package=numDeriv>.
+-   Gohel D, Skintzos P (2024). *flextable: Functions for Tabular Reporting*. R package version 0.9.5, <https://CRAN.R-project.org/package=flextable>.
+-   Greifer N (2024). *WeightIt: Weighting for Covariate Balance in Observational Studies*. R package version 1.0.0, <https://CRAN.R-project.org/package=WeightIt>.
+-   Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” *Journal of Statistical Software*, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
+-   Ho D, Imai K, King G, Stuart E (2011). “MatchIt: Nonparametric Preprocessing for Parametric Causal Inference.” *Journal of Statistical Software*, *42*(8), 1-28. doi:10.18637/jss.v042.i08 <https://doi.org/10.18637/jss.v042.i08>.
+-   Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2024). *gt: Easily Create Presentation-Ready Display Tables*. R package version 0.10.1, <https://CRAN.R-project.org/package=gt>.
+-   Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). “Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption.” *CRAN*. <https://easystats.github.io/report/>.
+-   Müller K, Wickham H (2023). *tibble: Simple Data Frames*. R package version 3.2.1, <https://CRAN.R-project.org/package=tibble>.
+-   Pinheiro J, Bates D, R Core Team (2023). *nlme: Linear and Nonlinear Mixed Effects Models*. R package version 3.1-164, <https://CRAN.R-project.org/package=nlme>. Pinheiro JC, Bates DM (2000). *Mixed-Effects Models in S and S-PLUS*. Springer, New York. doi:10.1007/b98882 <https://doi.org/10.1007/b98882>.
+-   R Core Team (2024). *R: A Language and Environment for Statistical Computing*. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+-   Rich B (2023). *table1: Tables of Descriptive Statistics in HTML*. R package version 1.4.3, <https://CRAN.R-project.org/package=table1>.
+-   Rinker TW, Kurkiewicz D (2018). *pacman: Package Management for R*. version 0.5.0, <http://github.com/trinker/pacman>.
+-   Venables WN, Ripley BD (2002). *Modern Applied Statistics with S*, Fourth edition. Springer, New York. ISBN 0-387-95457-0, <https://www.stats.ox.ac.uk/pub/MASS4/>.
+-   Venables WN, Ripley BD (2002). *Modern Applied Statistics with S*, Fourth edition. Springer, New York. ISBN 0-387-95457-0, <https://www.stats.ox.ac.uk/pub/MASS4/>.
+-   Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer-Verlag New York. ISBN 978-3-319-24277-4, <https://ggplot2.tidyverse.org>.
+-   Wickham H (2023). *forcats: Tools for Working with Categorical Variables (Factors)*. R package version 1.0.0, <https://CRAN.R-project.org/package=forcats>.
+-   Wickham H (2023). *stringr: Simple, Consistent Wrappers for Common String Operations*. R package version 1.5.1, <https://CRAN.R-project.org/package=stringr>.
+-   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” *Journal of Open Source Software*, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+-   Wickham H, François R, Henry L, Müller K, Vaughan D (2023). *dplyr: A Grammar of Data Manipulation*. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
+-   Wickham H, Henry L (2023). *purrr: Functional Programming Tools*. R package version 1.0.2, <https://CRAN.R-project.org/package=purrr>.
+-   Wickham H, Hester J, Bryan J (2024). *readr: Read Rectangular Text Data*. R package version 2.1.5, <https://CRAN.R-project.org/package=readr>.
+-   Wickham H, Vaughan D, Girlich M (2024). *tidyr: Tidy Messy Data*. R package version 1.3.1, <https://CRAN.R-project.org/package=tidyr>.
+-   Wood SN (2011). “Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models.” *Journal of the Royal Statistical Society (B)*, *73*(1), 3-36. Wood S, N., Pya, S"afken B (2016). “Smoothing parameter and model selection for general smooth models (with discussion).” *Journal of the American Statistical Association*, *111*, 1548-1575. Wood SN (2004). “Stable and efficient multiple smoothing parameter estimation for generalized additive models.” *Journal of the American Statistical Association*, *99*(467), 673-686. Wood S (2017). *Generalized Additive Models: An Introduction with R*, 2 edition. Chapman and Hall/CRC. Wood SN (2003). “Thin-plate regression splines.” *Journal of the Royal Statistical Society (B)*, *65*(1), 95-114.
+
+```{r}
+#| include: false
+
+# Run this chunk if you wish to clear your environment and unload packages.
+
+pacman::p_unload(negate = TRUE)
+
+rm(list = ls())
+```

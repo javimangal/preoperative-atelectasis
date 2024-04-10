@@ -1,3 +1,18 @@
+data <- data %>% 
+  mutate(
+    type_obesity = cut(
+      BMI,
+      breaks=c(30,35,40,80),
+      right=FALSE,
+      labels = c(
+        "Class 1 Obesity",
+        "Class 2 Obesity",
+        "Class 3 Obesity"
+      ) 
+    )
+  )
+table1::label(data$type_obesity) <- "Obesity class"
+
 for (variable in names(data)) {
   if (variable == "ID") {
     data$ID <- as.character(data$ID)
@@ -30,19 +45,7 @@ for (variable in names(data)) {
     units(data$BMI) <- "kg/m²"
     table1::label(data$BMI) <- "Body mass index"
   }
-
-  if (variable == "type_obesity") {
-    data$type_obesity <- factor(data$type_obesity,
-      levels = c(1, 2, 3),
-      labels = c(
-        "Class 1 Obesity",
-        "Class 2 Obesity",
-        "Class 3 Obesity"
-      )
-    )
-    table1::label(data$type_obesity) <- "Obesity class"
-  }
-
+  
   if (variable == "ARISCAT") {
     units(data$ARISCAT) <- "score"
     table1::label(data$ARISCAT) <- "ARISCAT"
@@ -112,7 +115,7 @@ for (variable in names(data)) {
   if (variable == "atelectasis_location") {
     data$atelectasis_location <- factor(data$atelectasis_location,
       levels = c(1, 2),
-      labels = c("Unilateral", "Bilateral")
+      labels = c("Right lung base predominance", "Bilateral lung bases")
     )
     table1::label(data$atelectasis_location) <- "Atelectasis location"
   }
@@ -206,6 +209,62 @@ for (variable in names(data)) {
     table1::label(data$surgery_performed) <- "Surgery performed"
   }
 
+  if (variable == "myocardial_infarction") {
+    data$myocardial_infarction <- factor(data$myocardial_infarction,
+                                levels = c(0, 1),
+                                labels = c("No", "Yes")
+    )
+    table1::label(data$myocardial_infarction) <- "Acute Myocardial Infarction"
+  }
+  
+  if (variable == "tuberculosis") {
+    data$tuberculosis <- factor(data$tuberculosis,
+                                         levels = c(0, 1),
+                                         labels = c("No", "Yes")
+    )
+    table1::label(data$tuberculosis) <- "Tuberculosis"
+  }
+  
+  if (variable == "asthma") {
+    data$asthma <- factor(data$asthma,
+                                levels = c(0, 1),
+                                labels = c("No", "Yes")
+    )
+    table1::label(data$asthma) <- "Asthma"
+  }
+  
+  if (variable == "COPD") {
+    data$COPD <- factor(data$COPD,
+                                levels = c(0, 1),
+                                labels = c("No", "Yes")
+    )
+    table1::label(data$COPD) <- "COPD"
+  }
+  
+  if (variable == "oxygen_use") {
+    data$oxygen_use <- factor(data$oxygen_use,
+                                levels = c(0, 1),
+                                labels = c("No", "Yes")
+    )
+    table1::label(data$oxygen_use) <- "Oxygen use"
+  }
+  
+  if (variable == "sleep_apnea") {
+    data$sleep_apnea <- factor(data$sleep_apnea,
+                               levels = c(0, 1),
+                               labels = c("No", "Yes")
+    )
+    table1::label(data$sleep_apnea) <- "Obstructive sleep apnea"
+  }
+  
+  if (variable == "CPAP_use") {
+    data$CPAP_use <- factor(data$CPAP_use,
+                              levels = c(0, 1),
+                              labels = c("No", "Yes")
+    )
+    table1::label(data$CPAP_use) <- "CPAP"
+  }
+  
   if (variable == "hypertension") {
     data$hypertension <- factor(data$hypertension,
       levels = c(0, 1),
@@ -220,14 +279,6 @@ for (variable in names(data)) {
       labels = c("No", "Yes")
     )
     table1::label(data$diabetes) <- "Diabetes"
-  }
-
-  if (variable == "sleep_apnea") {
-    data$sleep_apnea <- factor(data$sleep_apnea,
-      levels = c(0, 1),
-      labels = c("No", "Yes")
-    )
-    table1::label(data$sleep_apnea) <- "Obstructive sleep apnea"
   }
 
   if (variable == "hypothyroidism") {

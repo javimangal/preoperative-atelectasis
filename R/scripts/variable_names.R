@@ -166,7 +166,42 @@ for (variable in names(data)) {
     data$surgery_performed <- factor(data$surgery_performed)
     table1::label(data$surgery_performed) <- "Surgery performed"
   }
-
+  
+  if (variable == "myocardial_infarction") {
+    data$myocardial_infarction <- factor(data$myocardial_infarction)
+    table1::label(data$myocardial_infarction) <- "Acute Myocardial Infarction"
+  }
+  
+  if (variable == "tuberculosis") {
+    data$tuberculosis <- factor(data$tuberculosis)
+    table1::label(data$tuberculosis) <- "Tuberculosis"
+  }
+  
+  if (variable == "asthma") {
+    data$asthma <- factor(data$asthma)
+    table1::label(data$asthma) <- "Asthma"
+  }
+  
+  if (variable == "COPD") {
+    data$COPD <- factor(data$COPD)
+    table1::label(data$COPD) <- "COPD"
+  }
+  
+  if (variable == "oxygen_use") {
+    data$oxygen_use <- factor(data$oxygen_use)
+    table1::label(data$oxygen_use) <- "Oxygen use"
+  }
+  
+  if (variable == "sleep_apnea") {
+    data$sleep_apnea <- factor(data$sleep_apnea)
+    table1::label(data$sleep_apnea) <- "Obstructive sleep apnea"
+  }
+  
+  if (variable == "CPAP_use") {
+    data$CPAP_use <- factor(data$CPAP_use)
+    table1::label(data$CPAP_use) <- "CPAP"
+  }
+  
   if (variable == "hypertension") {
     data$hypertension <- factor(data$hypertension)
     table1::label(data$hypertension) <- "Hypertension"
@@ -175,11 +210,6 @@ for (variable in names(data)) {
   if (variable == "diabetes") {
     data$diabetes <- factor(data$diabetes)
     table1::label(data$diabetes) <- "Diabetes"
-  }
-
-  if (variable == "sleep_apnea") {
-    data$sleep_apnea <- factor(data$sleep_apnea)
-    table1::label(data$sleep_apnea) <- "Obstructive sleep apnea"
   }
 
   if (variable == "hypothyroidism") {

@@ -12,7 +12,9 @@ dataprev <- data %>%
   ))
 
 # Prepare subset of BMI class 1 and 2:   
-dataprev_1 <- dataprev %>% filter(type_obesity == "Class 1 Obesity" | type_obesity == "Class 2 Obesity")
+dataprev_1 <- dataprev %>% 
+  filter(type_obesity == "Class 1 Obesity" | type_obesity == "Class 2 Obesity") %>% 
+  droplevels()
 
 poisson_fit <- glm(atelectasis ~ type_obesity,
   data = dataprev_1,
@@ -48,7 +50,8 @@ model_output_prev_1
 
 
 ## Adjusted prevalence ratio  Class 2 Obesity
-poisson_fit <- glm(atelectasis ~ type_obesity + age + sex + sleep_apnea,
+poisson_fit <- glm(
+  atelectasis ~ type_obesity + age + sex + altitude_cat,
   data = dataprev_1,
   family = poisson(link = log)
 )
@@ -83,7 +86,9 @@ model_output_prev_1_adj
 ## Crude prevalence ratio Class 3 Obesity  
 
 # Prepare subset of BMI class 1 and 3:   
-dataprev_2 <- dataprev %>% filter(type_obesity == "Class 1 Obesity" | type_obesity == "Class 3 Obesity")
+dataprev_2 <- dataprev %>% 
+  filter(type_obesity == "Class 1 Obesity" | type_obesity == "Class 3 Obesity") %>% 
+  droplevels()
 
 poisson_fit <- glm(atelectasis ~ type_obesity,
                    data = dataprev_2,
@@ -120,7 +125,7 @@ model_output_prev_2
 
 ## Adjusted prevalence ratio  Class 2 Obesity
 poisson_fit <- glm(atelectasis ~ type_obesity + 
-                     age + sex + sleep_apnea,
+                     age + sex + altitude_cat,
                    data = dataprev_2,
                    family = poisson(link = log)
 )
@@ -168,6 +173,33 @@ table_output_prev_2 <- model_output_prev_2 %>%
 table_output <- rbind.data.frame(table_output_prev_1,
                                  table_output_prev_2)
 
+#Calculate E-values for adjusted models   
+evalue_model_1 <- evalues.RR(
+  est = model_output_prev_1_adj$Estimate[2],
+  lo = model_output_prev_1_adj$Lower[2],
+  hi = model_output_prev_1_adj$Upper[2]
+) %>% 
+  data.frame %>% 
+  dplyr::slice(2)
+
+evalue_model_2 <- evalues.RR(
+  est = model_output_prev_2_adj$Estimate[2],
+  lo = model_output_prev_2_adj$Lower[2],
+  hi = model_output_prev_2_adj$Upper[2]
+) %>% 
+  data.frame %>% 
+  dplyr::slice(2)
+
+evalues <- rbind(
+  evalue_model_1,
+  evalue_model_2
+) %>% 
+  select(-upper) %>% 
+  rename(
+    Evalue = point, 
+    Evalue_lower = lower) %>% 
+  round(2)
+
 # Merge output table for adjusted models:  
 table_output_prev_1_adj <- model_output_prev_1_adj %>%
   dplyr::slice(2) %>%
@@ -184,9 +216,9 @@ table_output_prev_2_adj <- model_output_prev_2_adj %>%
 table_output2 <- rbind.data.frame(table_output_prev_1_adj,
                                   table_output_prev_2_adj)
 
-table2 <- dplyr::bind_cols(table_output, table_output2) %>%
+table2 <- dplyr::bind_cols(table_output, table_output2, evalues) %>%
   rownames_to_column(var = "Category") %>%
-  mutate_at("Category", str_replace, "type_obesity", "")
+  mutate_at("Category", str_replace, "type_obesity", "") 
 
 flextable(table2) %>%
   save_as_docx(path = paste0(tabfolder, "/Table2.docx"))

@@ -24,10 +24,17 @@
 # RStudio files
 .Rproj.user/
 
-# html, pdf and image files within R folder  
+# html, pdf and image files within R folder
 /R/*.html
 /R/*.pdf
 /R/images
+
+# ARISCAT results (work in progress)
+/R/ARISCAT.qmd
+
+# Response to reviewers (peer-review document)
+/R/response_reviewers.qmd
+
 
 # produced vignettes
 vignettes/*.html
@@ -47,7 +54,7 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Manuscript in progress 
+# Manuscript in progress
 docs/manuscript/*.docx
 
 # translation temp files
@@ -55,3 +62,5 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+/.quarto/

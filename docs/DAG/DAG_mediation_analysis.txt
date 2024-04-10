@@ -1,0 +1,183 @@
+Author: Javier Mancilla Galindo 
+ORCiD: https://orcid.org/0000-0002-0718-467X 
+Title: Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study
+
+Here, I present the directed acyclic graphs (DAG) for the relationship between variables for the exposure (BMI) - outcome (SpO2) analysis, including the mediator of interest (atelectasis_percent).
+
+The following text can be copied into the "Model Code" box in https://www.dagitty.net/dags.html 
+After doing this and clicking the "Update DAG" button, you should be able to visualize the directed acyclic (DAG) used in this study:    
+
+Exposure-outcome confounders:
+dag {
+bb="-2.14,-2.751,2.015,3.068"
+BMI [exposure,pos="-0.560,-1.956"]
+COPD [pos="-1.413,-0.612"]
+age [adjusted,pos="-0.754,2.381"]
+altitude_cat [adjusted,pos="1.308,1.126"]
+asthma [pos="-1.506,1.467"]
+atelectasis_percent [pos="0.387,-1.538"]
+sex [adjusted,pos="0.157,2.568"]
+sleep_apnea [pos="0.116,0.802"]
+spo2_VPO [outcome,pos="1.601,-1.562"]
+BMI -> asthma
+BMI -> atelectasis_percent
+BMI -> sleep_apnea
+BMI -> spo2_VPO [pos="0.346,-2.614"]
+COPD -> atelectasis_percent
+COPD -> spo2_VPO
+age -> BMI
+age -> COPD
+age -> atelectasis_percent
+age -> sleep_apnea
+age -> spo2_VPO
+altitude_cat -> BMI
+altitude_cat -> COPD
+altitude_cat -> asthma
+altitude_cat -> atelectasis_percent
+altitude_cat -> sleep_apnea
+altitude_cat -> spo2_VPO
+asthma -> COPD
+asthma -> atelectasis_percent
+asthma -> spo2_VPO
+asthma <-> sleep_apnea
+atelectasis_percent -> spo2_VPO
+sex -> BMI
+sex -> COPD
+sex -> asthma
+sex -> atelectasis_percent
+sex -> sleep_apnea
+sex -> spo2_VPO
+sleep_apnea -> COPD
+sleep_apnea -> atelectasis_percent
+sleep_apnea -> spo2_VPO
+}
+
+
+
+Mediator-outcome confounders: 
+dag {
+bb="-2.14,-2.751,2.015,3.068"
+BMI [adjusted,pos="-0.560,-1.956"]
+COPD [adjusted,pos="-1.413,-0.612"]
+age [adjusted,pos="-0.754,2.381"]
+altitude_cat [adjusted,pos="1.308,1.126"]
+asthma [adjusted,pos="-1.506,1.467"]
+atelectasis_percent [exposure,pos="0.387,-1.538"]
+sex [adjusted,pos="0.157,2.568"]
+sleep_apnea [adjusted,pos="0.116,0.802"]
+spo2_VPO [outcome,pos="1.601,-1.562"]
+BMI -> asthma
+BMI -> atelectasis_percent
+BMI -> sleep_apnea
+BMI -> spo2_VPO [pos="0.346,-2.614"]
+COPD -> atelectasis_percent
+COPD -> spo2_VPO
+age -> BMI
+age -> COPD
+age -> atelectasis_percent
+age -> sleep_apnea
+age -> spo2_VPO
+altitude_cat -> COPD
+altitude_cat -> asthma
+altitude_cat -> atelectasis_percent
+altitude_cat -> sleep_apnea
+altitude_cat -> spo2_VPO
+asthma -> COPD
+asthma -> atelectasis_percent
+asthma -> spo2_VPO
+asthma <-> sleep_apnea
+atelectasis_percent -> spo2_VPO
+sex -> BMI
+sex -> COPD
+sex -> asthma
+sex -> atelectasis_percent
+sex -> sleep_apnea
+sex -> spo2_VPO
+sleep_apnea -> COPD
+sleep_apnea -> atelectasis_percent
+sleep_apnea -> spo2_VPO
+}
+
+
+IPW removing exposure-outcome confounding:
+dag {
+bb="-2.14,-2.751,2.015,3.068"
+BMI [exposure,pos="-0.560,-1.956"]
+COPD [pos="-1.413,-0.612"]
+L1 [adjusted,pos="-0.282,-2.488"]
+age [pos="-0.754,2.381"]
+altitude_cat [pos="1.308,1.126"]
+asthma [pos="-1.506,1.467"]
+atelectasis_percent [pos="0.387,-1.538"]
+sex [pos="0.157,2.568"]
+sleep_apnea [pos="0.116,0.802"]
+spo2_VPO [outcome,pos="1.601,-1.562"]
+BMI -> asthma
+BMI -> atelectasis_percent
+BMI -> sleep_apnea
+BMI -> spo2_VPO [pos="0.346,-2.614"]
+COPD -> atelectasis_percent
+COPD -> spo2_VPO
+L1 -> spo2_VPO [pos="0.738,-2.655"]
+age -> COPD
+age -> atelectasis_percent
+age -> sleep_apnea
+age -> spo2_VPO
+altitude_cat -> COPD
+altitude_cat -> asthma
+altitude_cat -> atelectasis_percent
+altitude_cat -> sleep_apnea
+altitude_cat -> spo2_VPO
+asthma -> COPD
+asthma -> atelectasis_percent
+asthma -> spo2_VPO
+asthma <-> sleep_apnea
+atelectasis_percent -> spo2_VPO
+sex -> COPD
+sex -> asthma
+sex -> atelectasis_percent
+sex -> sleep_apnea
+sex -> spo2_VPO
+sleep_apnea -> COPD
+sleep_apnea -> atelectasis_percent
+sleep_apnea -> spo2_VPO
+}
+
+IPW removing mediator-outcome confounding:
+dag {
+bb="-2.14,-2.751,2.015,3.068"
+BMI [exposure,pos="-0.560,-1.956"]
+COPD [pos="-1.413,-0.612"]
+L1 [adjusted,pos="-0.282,-2.488"]
+L2 [adjusted,pos="0.493,-0.851"]
+age [pos="-0.754,2.381"]
+altitude_cat [pos="1.308,1.126"]
+asthma [pos="-1.506,1.467"]
+atelectasis_percent [exposure,pos="0.387,-1.538"]
+sex [pos="0.157,2.568"]
+sleep_apnea [pos="0.116,0.802"]
+spo2_VPO [outcome,pos="1.601,-1.562"]
+BMI -> asthma
+BMI -> sleep_apnea
+BMI -> spo2_VPO [pos="0.346,-2.614"]
+COPD -> spo2_VPO
+L1 -> spo2_VPO [pos="0.738,-2.655"]
+L2 -> spo2_VPO
+age -> COPD
+age -> sleep_apnea
+age -> spo2_VPO
+altitude_cat -> COPD
+altitude_cat -> asthma
+altitude_cat -> sleep_apnea
+altitude_cat -> spo2_VPO
+asthma -> COPD
+asthma -> spo2_VPO
+asthma <-> sleep_apnea
+atelectasis_percent -> spo2_VPO
+sex -> COPD
+sex -> asthma
+sex -> sleep_apnea
+sex -> spo2_VPO
+sleep_apnea -> COPD
+sleep_apnea -> spo2_VPO
+}

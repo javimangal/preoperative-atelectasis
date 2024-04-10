@@ -101,7 +101,7 @@ grid.draw(blank_plot)
 figure1 <- grid.arrange(fig1a, blank_plot, fig1b, fig1c, ncol=2)
 
 ### Save figure:   
-ggsave("Figure1.png",plot=figure1,
+ggsave("Figure1.pdf",plot=figure1,
        path=figfolder, 
        width = 12,  height = 10, units = "in", 
-       dpi = 300)
+       dpi = 1200)

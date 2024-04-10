@@ -15,6 +15,7 @@ format:
     documentclass: scrartcl
 editor: visual
 ---
+\pagebreak
 
 # Setup
 
@@ -36,10 +37,11 @@ pacman::p_load(
   lavaan, #Used to create correlation matrix to assess conditional independencies.  
   broom, #Used to exponentiate coefficients of regression models.  
   sandwich, #Used to calculate robust standard errors for prevalence ratios.
+  EValue, #Used to calculate E-values as sensitivity analysis.   
   flextable, #Used to export tables.  
   rms, #Used to model ordinal outcome (atelectasis percent) and 
        #test proportional odds assumptions.  
-  VGAM, #Used to model partial proportional odds model.   
+  VGAM, #Used to model partial proportional odds model.
   gt, #Used to present a summary of the results of regression models. 
   report #Used to cite packages used in this session.
 )
@@ -95,6 +97,8 @@ data <- data %>%
                        )
     )
 
+
+# Create data to model atelectasis percent as ordinal:
 data$atelectasis_percent <- factor(
   data$atelectasis_percent, 
   levels=c(0,2.5,5,7.5,10,12.5,15,17.5,27.5)
@@ -103,12 +107,14 @@ data$atelectasis_percent <- factor(
   factor(labels = c("0%","2.5%","5%","7.5%","10%","12.5%","15%","17.5%"))
 ```
 
+\pagebreak
+
 ## DAG
 
-DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG.R***
+DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG_atelectasis.R***
 
 ```{r}
-source("scripts/DAG.R")
+source("scripts/DAG_atelectasis.R")
 plot(DAG)
 ```
 
@@ -126,35 +132,53 @@ impliedConditionalIndependencies(DAG)
 #| include: false 
 ## Change 'false' for 'true' above to show results 
 
-subsetcondit <- data %>% select(c("age",
-                                       "sex",
-                                       "type_obesity",
-                                       "spo2_VPO",
-                                       "hb",
-                                       "sleep_apnea",
-                                       "atelectasis_percent",
-                                       "altitude_cat")
-                                     ) 
+subsetcondit <- data %>% 
+  select(
+  c("age",
+    "sex",
+    "type_obesity",
+    "spo2_VPO",
+    "sleep_apnea",
+    "asthma",
+    "oxygen_use",
+    "CPAP_use",
+    "COPD",
+    "atelectasis_percent",
+    "altitude_cat")
+  ) 
 
 subsetcondit <- subsetcondit %>% 
   mutate(sex = as.numeric(sex),
-         sleep_apnea = as.numeric(sleep_apnea)
+         sleep_apnea = as.numeric(sleep_apnea),
+         type_obesity = as.numeric(type_obesity),
+         asthma = as.numeric(asthma),
+         COPD = as.numeric(COPD),
+         oxygen_use = as.numeric(oxygen_use),
+         CPAP_use = as.numeric(CPAP_use),
+         altitude_cat = as.numeric(altitude_cat)
          )
 
-corr <- lavCor(subsetcondit,
-               ordered=c("sex",
-                         "type_obesity",
-                         "sleep_apnea",
-                         "atelectasis_percent",
-                         "altitude_cat",
-                         "spo2_VPO")
-               )
+corr <- lavCor(
+  subsetcondit,
+  ordered=c(
+    "sex",
+    "type_obesity",
+    "sleep_apnea",
+    "asthma",
+    "COPD",
+    "oxygen_use",
+    "CPAP_use",
+    "atelectasis_percent",
+    "altitude_cat",
+    "spo2_VPO"
+    )
+  )
 
 corr
 ```
 
 ```{r}
-#| include: false 
+#| include: true 
 ## Change 'false' for 'true' above to show results 
 
 localtests <- localTests(DAG, sample.cov=corr, sample.nobs=nrow( subsetcondit ) )
@@ -169,12 +193,14 @@ plotLocalTestResults(localtests)
 
 Conditional independence assumption OK as all confidence intervals cointain 0.
 
-The minimal set of adjustment for models is ***age***, ***sex***, and ***sleep_apnea***.
+The minimal set of adjustment for models is ***age***, ***sex***, and **altitude_cat**\*.
 
 ```{r}
 #| include: false 
 rm(DAG,corr,localtests,subsetcondit)
 ```
+
+\pagebreak
 
 # Prevalence Ratio
 
@@ -195,8 +221,11 @@ table2 %>% gt()
 #| include: false 
 rm(list=setdiff(ls(pattern = "prev"), lsf.str()))
 rm(list=setdiff(ls(pattern = "output"), lsf.str()))
+rm(list=setdiff(ls(pattern = "evalue"), lsf.str()))
 rm(poisson_fit, covmat, se, table2)
 ```
+
+\pagebreak
 
 # Ordinal Logistic Regression Model
 
@@ -214,7 +243,10 @@ data <- data %>%
       "2"="Class 2 Obesity",
       "3"="Class 3 Obesity"
       ), 
-    atelectasis_percent = ordered(atelectasis_percent)
+    atelectasis_percent = ordered(atelectasis_percent),
+    altitude_cat = fct_recode(altitude_cat,
+                               Low = "Low altitude",
+                               Moderate = "Moderate altitude")
     ) 
 ```
 
@@ -338,6 +370,18 @@ summary(fit_OSA)
 ```
 
 ```{r}
+fit_asthma <- orm(atelectasis_percent ~ asthma,
+    data = data
+    )
+
+fit_asthma
+```
+
+```{r}
+summary(fit_asthma)
+```
+
+```{r}
 fit_sex <- orm(atelectasis_percent ~ sex,
     data = data
     )
@@ -361,11 +405,23 @@ fit_age
 summary(fit_age)
 ```
 
+```{r}
+fit_altitude <- orm(atelectasis_percent ~ altitude_cat,
+    data = data
+    )
+
+fit_altitude
+```
+
+```{r}
+summary(fit_altitude)
+```
+
 ## Multivariable model
 
 ```{r}
 fit_multi <- orm(atelectasis_percent ~ type_obesity +
-                   sleep_apnea + sex + age + diabetes,
+                   sex + age + altitude_cat,
                  data = data,
                  )
 
@@ -376,6 +432,8 @@ fit_multi
 summary(fit_multi, type_obesity = "1", sex = "Woman")
 ```
 
+\pagebreak
+
 # Package References
 
 ```{r}
@@ -384,29 +442,30 @@ report::cite_packages(session)
 ```
 
 -   Gohel D, Skintzos P (2023). *flextable: Functions for Tabular Reporting*. R package version 0.9.4, <https://CRAN.R-project.org/package=flextable>.
--   Grolemund G, Wickham H (2011). "Dates and Times Made Easy with lubridate." *Journal of Statistical Software*, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
+-   Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” *Journal of Statistical Software*, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
 -   Harrell Jr F (2023). *Hmisc: Harrell Miscellaneous*. R package version 5.1-1, <https://CRAN.R-project.org/package=Hmisc>.
 -   Harrell Jr FE (2023). *rms: Regression Modeling Strategies*. R package version 6.7-1, <https://CRAN.R-project.org/package=rms>.
--   Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2023). *gt: Easily Create Presentation-Ready Display Tables*. R package version 0.10.0, <https://CRAN.R-project.org/package=gt>.
--   Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). "Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption." *CRAN*. <https://easystats.github.io/report/>.
+-   Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2024). *gt: Easily Create Presentation-Ready Display Tables*. R package version 0.10.1, <https://CRAN.R-project.org/package=gt>.
+-   Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). “Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption.” *CRAN*. <https://easystats.github.io/report/>.
 -   Müller K, Wickham H (2023). *tibble: Simple Data Frames*. R package version 3.2.1, <https://CRAN.R-project.org/package=tibble>.
 -   Neuwirth E (2022). *RColorBrewer: ColorBrewer Palettes*. R package version 1.1-3, <https://CRAN.R-project.org/package=RColorBrewer>.
 -   R Core Team (2023). *R: A Language and Environment for Statistical Computing*. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
 -   Rich B (2023). *table1: Tables of Descriptive Statistics in HTML*. R package version 1.4.3, <https://CRAN.R-project.org/package=table1>.
 -   Rinker TW, Kurkiewicz D (2018). *pacman: Package Management for R*. version 0.5.0, <http://github.com/trinker/pacman>.
 -   Robinson D, Hayes A, Couch S (2023). *broom: Convert Statistical Objects into Tidy Tibbles*. R package version 1.0.5, <https://CRAN.R-project.org/package=broom>.
--   Rosseel Y (2012). "lavaan: An R Package for Structural Equation Modeling." *Journal of Statistical Software*, *48*(2), 1-36. doi:10.18637/jss.v048.i02 <https://doi.org/10.18637/jss.v048.i02>.
--   Textor J, van der Zander B, Gilthorpe MS, Liśkiewicz M, Ellison GT (2016). "Robust causal inference using directed acyclic graphs: the R package 'dagitty'." *International Journal of Epidemiology*, *45*(6), 1887-1894. doi:10.1093/ije/dyw341 <https://doi.org/10.1093/ije/dyw341>.
+-   Rosseel Y (2012). “lavaan: An R Package for Structural Equation Modeling.” *Journal of Statistical Software*, *48*(2), 1-36. doi:10.18637/jss.v048.i02 <https://doi.org/10.18637/jss.v048.i02>.
+-   Textor J, van der Zander B, Gilthorpe MS, Liśkiewicz M, Ellison GT (2016). “Robust causal inference using directed acyclic graphs: the R package 'dagitty'.” *International Journal of Epidemiology*, *45*(6), 1887-1894. doi:10.1093/ije/dyw341 <https://doi.org/10.1093/ije/dyw341>.
+-   VanderWeele TJ, Ding P (2011). “Sensitivity analysis in observational research: introducing the E-value.” *Annals of Internal Medicine*, *167*(4), 268-274. Mathur MB, VanderWeele TJ (2019). “Sensitivity analysis for unmeasured confounding in meta-analyses.” *Journal of the American Statistical Association\>*. Smith LH, VanderWeele TJ (2019). “Bounding bias due to selection.” *Epidemiology*.
 -   Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer-Verlag New York. ISBN 978-3-319-24277-4, <https://ggplot2.tidyverse.org>.
 -   Wickham H (2023). *forcats: Tools for Working with Categorical Variables (Factors)*. R package version 1.0.0, <https://CRAN.R-project.org/package=forcats>.
 -   Wickham H (2023). *stringr: Simple, Consistent Wrappers for Common String Operations*. R package version 1.5.1, <https://CRAN.R-project.org/package=stringr>.
--   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). "Welcome to the tidyverse." *Journal of Open Source Software*, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+-   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” *Journal of Open Source Software*, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
 -   Wickham H, François R, Henry L, Müller K, Vaughan D (2023). *dplyr: A Grammar of Data Manipulation*. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
 -   Wickham H, Henry L (2023). *purrr: Functional Programming Tools*. R package version 1.0.2, <https://CRAN.R-project.org/package=purrr>.
--   Wickham H, Hester J, Bryan J (2023). *readr: Read Rectangular Text Data*. R package version 2.1.4, <https://CRAN.R-project.org/package=readr>.
--   Wickham H, Vaughan D, Girlich M (2023). *tidyr: Tidy Messy Data*. R package version 1.3.0, <https://CRAN.R-project.org/package=tidyr>.
--   Yee TW (2015). *Vector Generalized Linear and Additive Models: With an Implementation in R*. Springer, New York, USA. Yee TW, Wild CJ (1996). "Vector Generalized Additive Models." *Journal of Royal Statistical Society, Series B*, *58*(3), 481-493. Yee TW (2010). "The VGAM Package for Categorical Data Analysis." *Journal of Statistical Software*, *32*(10), 1-34. doi:10.18637/jss.v032.i10 <https://doi.org/10.18637/jss.v032.i10>. Yee TW, Hadi AF (2014). "Row-column interaction models, with an R implementation." *Computational Statistics*, *29*(6), 1427-1445. Yee TW (2023). *VGAM: Vector Generalized Linear and Additive Models*. R package version 1.1-9, <https://CRAN.R-project.org/package=VGAM>. Yee TW (2013). "Two-parameter reduced-rank vector generalized linear models." *Computational Statistics and Data Analysis*, *71*, 889-902. Yee TW, Stoklosa J, Huggins RM (2015). "The VGAM Package for Capture-Recapture Data Using the Conditional Likelihood." *Journal of Statistical Software*, *65*(5), 1-33. doi:10.18637/jss.v065.i05 <https://doi.org/10.18637/jss.v065.i05>. Yee TW (2020). "The VGAM package for negative binomial regression." *Australian and New Zealand Journal of Statistics*, *62*(1), 116-131.
--   Zeileis A, Köll S, Graham N (2020). "Various Versatile Variances: An Object-Oriented Implementation of Clustered Covariances in R." *Journal of Statistical Software*, *95*(1), 1-36. doi:10.18637/jss.v095.i01 <https://doi.org/10.18637/jss.v095.i01>. Zeileis A (2004). "Econometric Computing with HC and HAC Covariance Matrix Estimators." *Journal of Statistical Software*, *11*(10), 1-17. doi:10.18637/jss.v011.i10 <https://doi.org/10.18637/jss.v011.i10>. Zeileis A (2006). "Object-Oriented Computation of Sandwich Estimators." *Journal of Statistical Software*, *16*(9), 1-16. doi:10.18637/jss.v016.i09 <https://doi.org/10.18637/jss.v016.i09>.
+-   Wickham H, Hester J, Bryan J (2024). *readr: Read Rectangular Text Data*. R package version 2.1.5, <https://CRAN.R-project.org/package=readr>.
+-   Wickham H, Vaughan D, Girlich M (2024). *tidyr: Tidy Messy Data*. R package version 1.3.1, <https://CRAN.R-project.org/package=tidyr>.
+-   Yee TW (2015). *Vector Generalized Linear and Additive Models: With an Implementation in R*. Springer, New York, USA. Yee TW, Wild CJ (1996). “Vector Generalized Additive Models.” *Journal of Royal Statistical Society, Series B*, *58*(3), 481-493. Yee TW (2010). “The VGAM Package for Categorical Data Analysis.” *Journal of Statistical Software*, *32*(10), 1-34. doi:10.18637/jss.v032.i10 <https://doi.org/10.18637/jss.v032.i10>. Yee TW, Hadi AF (2014). “Row-column interaction models, with an R implementation.” *Computational Statistics*, *29*(6), 1427-1445. Yee TW (2024). *VGAM: Vector Generalized Linear and Additive Models*. R package version 1.1-10, <https://CRAN.R-project.org/package=VGAM>. Yee TW (2013). “Two-parameter reduced-rank vector generalized linear models.” *Computational Statistics and Data Analysis*, *71*, 889-902. Yee TW, Stoklosa J, Huggins RM (2015). “The VGAM Package for Capture-Recapture Data Using the Conditional Likelihood.” *Journal of Statistical Software*, *65*(5), 1-33. doi:10.18637/jss.v065.i05 <https://doi.org/10.18637/jss.v065.i05>. Yee TW (2020). “The VGAM package for negative binomial regression.” *Australian and New Zealand Journal of Statistics*, *62*(1), 116-131.
+-   Zeileis A, Köll S, Graham N (2020). “Various Versatile Variances: An Object-Oriented Implementation of Clustered Covariances in R.” *Journal of Statistical Software*, *95*(1), 1-36. doi:10.18637/jss.v095.i01 <https://doi.org/10.18637/jss.v095.i01>. Zeileis A (2004). “Econometric Computing with HC and HAC Covariance Matrix Estimators.” *Journal of Statistical Software*, *11*(10), 1-17. doi:10.18637/jss.v011.i10 <https://doi.org/10.18637/jss.v011.i10>. Zeileis A (2006). “Object-Oriented Computation of Sandwich Estimators.” *Journal of Statistical Software*, *16*(9), 1-16. doi:10.18637/jss.v016.i09 <https://doi.org/10.18637/jss.v016.i09>.
 
 ```{r}
 #| include: false

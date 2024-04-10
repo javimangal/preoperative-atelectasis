@@ -16,6 +16,8 @@ format:
 editor: visual
 ---
 
+\pagebreak
+
 # Setup
 
 #### Packages used
@@ -78,19 +80,84 @@ source("scripts/variable_names.R")
 
 ```
 
+\pagebreak
+
 # Assessment of independent variables
 
 The selection of variables that will be assessed is according to the following directed acyclic graph which will be used again before statistical modelling, to assess conditional independencies.
 
 ## DAG
 
-DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG.R***
+DAG generated in the [DAGitty website](https://www.dagitty.net/) and sourced from the accompanying script ***DAG_atelectasis.R***
 
 ```{r}
-source("scripts/DAG.R")
+source("scripts/DAG_atelectasis.R")
 plot(DAG)
 rm(DAG)
 ```
+
+The rationale for variables in this DAG are as follows:
+
+## Exposure
+
+The increasing degree of obesity, according to the WHO obesity class categories or BMI, is the exposure of interest.
+
+## Primary outcome
+
+Having atelectasis (Yes or No) and an increasing degree of atelectasis (atelectasis_percent) are the main outcomes of interest. An arrow from type_obesity to atelectasis represents the exposure-outcome relationship of interest.
+
+## Secondary outcome
+
+Decreasing preoperative SpO2 is hypothesized to be related to an increasing degree of obesity. An arrow from type_obesity to spo2_VPO represents this. Atelectasis_percentage is thought to be the main mediator of the effect of BMI on preoperative SpO2. An arrow from type_obesity to atelectasis_percent, followed by an arrow from atelectasis_percent to spo2_VPO.
+
+## Covariates
+
+#### Sex and Age
+
+These two variables are known to be associated with a higher risk of developing postoperative atelectasis in patients with obesity undergoing bariatric surgery. [Baltieri, et al.](https://doi.org/10.1016/j.bjane.2014.11.016). Arrows originating from these variables and going to type_obesity, atelectasis_percent, and spo2_VPO represent these relationships.\
+The implications for analyses is that ***sex*** and ***age*** are both **confonders** to be accounted for in both the models with atelectasis and SpO2 as outcomes.
+
+#### Obstructive sleep apnea
+
+Increasing BMI is a strong risk factor for OSA and OSA severity. [Baltieri, et al.](https://doi.org/10.1378%2Fchest.09-0360) Therefore, an arrow originating in type_obesity, pointing towards OSA represents this relationship. OSA is hypothesized to lead to the degree of atelectasis and preoperative SpO2. Therefore, an arrow from OSA to atelectasis_percent and spo2_VPO represents these relationships. The implications for the analysis are the following:
+
+1.  OSA is a potential mediator of the effect of BMI on atelectasis percentage. Therefore, this variable should **not** be adjusted for in the models with ***atelectasis*** as the outcome.\
+2.  OSA is a **confounder** of the mediator-outcome relationship in the models with ***SpO2*** as the outcome.
+
+#### Asthma
+
+It has been shown that obesity leads to asthma, whereas the inverse relationship is very unlikely to be possible. Thus, an arrow from type obesity to asthma was drawn. [Yang-Ching, et al.](https://www.nature.com/articles/s41366-018-0160-8).
+
+It has been reported that obesity-assiciated late onset non-allergic asthma is negatively related to atelectasis due to a tendency to develop more air trapping than atelectasis in these patients, compared to patients with obesity and no diagnosis of asthma in whom the airways collapse slowly and air is expelled, leading to atelectasis. [Bhatawadekar , et al.](https://www.atsjournals.org/doi/10.1513/AnnalsATS.202010-1317RL). During sleep, asthma affects SpO2 independently of BMI and OSA. [Sundbom, et al.](https://doi.org/10.5664/jcsm.10178) For these reasons, an arrow from asthma to atelectasis, and an arrow from asthma to SpO2 was drawn.
+
+The implications for the analysis are the following:
+
+1.  Asthma is a potential mediator of the effect of BMI on atelectasis percentage. Therefore, this variable should **not** be adjusted for in the models with ***atelectasis*** as the outcome.\
+2.  Asthma is a potential **confounder** of the mediator-outcome relationship in the models with ***SpO2*** as the outcome.
+
+#### COPD
+
+Although there is a strong relationship between undernutrition and COPD, the releationship between obesity and COPD has been inconsistent among studies. Since this study only included patients with obesity, the potential relationship between underweight and COPD is likely not relevant for this particular study. Furthermore, there is still doubt regarding any potential role of obesity-related pathophysiological mechanisms which could potentially lead to COPD. [Hanson, et al](https://doi.org/10.2147/copd.s50111). For these reasons, an arrow between COPD and obesity (or the inverse) was not drawn. This assumption was checked through the conditional independencies check (see Part 4), and this assumption is consistent with the data.
+
+Regarding a relationship between COPD and SpO2, there is a clear relationship between these variables, reason why an arrow going from COPD to SpO2 was drawn. As for atelectasis, studies have found atelectasis, especially in patients with wood smoke-realted COPD. [González-García, et al](https://doi.org/10.1590/s1806-37132013000200005) and [Carmo Moreira, et al](https://doi.org/10.1590/s1806-37132013000200006) Thus, an arrow from COPD to atelectasis was drawn.
+
+#### Altitude
+
+Although not directly linked to obesity, participants with OSA at an an altitude above 1600 meters can develop hypobaric hypoxia, which "promotes frequent central apneas in addition to obstructive events, resulting in combined intermittent and sustained hypoxia". [Bloch, et al](https://doi.org/10.1089/ham.2015.0016)
+
+For the atelectasis outcome, I could not find evidence either supporting or rejecting an association between altitude and prevalence of atelectasis. However, during the conditional independencies assumptions testing procedure, the data suggested a correlation, reason why an arrow from altitude to atelectasis was drawn as the reverse is less likely to be true (i.e., obesity would hardly determine the altitude of the place of residence).
+
+The implications for analyses is that ***altitude_cat*** is a potential **confounder** to be accounted for in both the models with atelectasis and SpO2 as outcomes.
+
+#### Oxygen use at home and CPAP use at home
+
+These variables are descendants of the exposure, mediator, outcomes, and covariates of interest. The implications for analyses is that these 2 variables should **not** be adjusted for in any of the models.
+
+#### Hemoglobin
+
+There is no strong evidence supporting a link between BMI and hemoglobin. In any case, hemoglobin would be a descendant of all main variables of interest (exposure, mediator, and outcomes). Thus, hemoglobin was excluded from this DAG for simplification.
+
+#### Other variables
 
 Other variables that are potential confounders are not shown in this DAG since they were addressed by design in this study as follows:
 
@@ -98,7 +165,17 @@ Other variables that are potential confounders are not shown in this DAG since t
 
 -   Prior COVID-19: This was an exclusion criterion (**n=3**).
 
--   Bronchiectasis: This was an exclusion criterion (n=0).
+-   Bronchiectasis in chest CT: This was an exclusion criterion (n=0).
+
+-   Neuromuscular diseases: This was an exclusion criterion (n=0).
+
+-   Prior of current tuberculosis: This was an exclusion criterion (n=0).
+
+#### Unmeasured variables
+
+Due to the possibility of unmeasured confounders, E-values will be calculated and presented when possible as sensitivity analyses.
+
+\pagebreak
 
 ## Description of independent variables
 
@@ -172,6 +249,121 @@ Distribution of BMI was assessed earlier. It is right-skewed due to extreme valu
 rm(frequencies,percentage)
 ```
 
+#### Obstructive sleep apnea
+
+Frequencies:
+
+```{r}
+frequencies <- table(sleep_apnea)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percentage <- round(prop.table(frequencies)*100,1)
+percentage
+```
+
+> Patients with a diagnosis of OSA were `r percentage[2]`% (n=`r frequencies[2]`) of the sample.
+
+```{r}
+#| include: false
+rm(frequencies,percentage)
+```
+
+#### Asthma
+
+Frequencies:
+
+```{r}
+frequencies <- table(asthma)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percentage <- round(prop.table(frequencies)*100,1)
+percentage
+```
+
+> Patients with a diagnosis of asthma were `r percentage[2]`% (n=`r frequencies[2]`) of the sample.
+
+```{r}
+#| include: false
+rm(frequencies,percentage)
+```
+
+#### COPD
+
+Frequencies:
+
+```{r}
+frequencies <- table(COPD)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percentage <- round(prop.table(frequencies)*100,1)
+percentage
+```
+
+> Patients with COPD were `r percentage[2]`% (n=`r frequencies[2]`) of the sample.
+
+```{r}
+#| include: false
+rm(frequencies,percentage)
+```
+
+#### Altitude
+
+Summary:
+
+```{r}
+summary(altitude)
+```
+
+Distribution of altitude was assessed earlier. Distribution is very unclear due to very widespread datapoints. Thus, I will create a new variable categorizing values according to the [study by Crocker ME, et al](https://doi.org/10.1016/S2214-109X(19)30543-1).
+
+```{r}
+data <- data %>% 
+  mutate(altitude_cat = cut(altitude,
+                            breaks=c(0,1000,2500),
+                            right=FALSE,
+                            labels=c("Low altitude","Moderate altitude")
+                            )
+         )
+```
+
+```{r}
+#| include: false
+
+detach(data)
+attach(data) 
+# This is done to update the attached dataset with the newly created variable.   
+```
+
+Frequencies:
+
+```{r}
+frequencies <- table(altitude_cat)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies)*100,1)
+```
+
+```{r}
+#| include: false
+rm(frequencies)
+```
+
 #### SpO2
 
 Summary:
@@ -224,12 +416,12 @@ percentage
 rm(frequencies,percentage)
 ```
 
-#### Obstructive sleep apnea
+#### Oxygen use
 
 Frequencies:
 
 ```{r}
-frequencies <- table(sleep_apnea)
+frequencies <- table(oxygen_use)
 frequencies
 ```
 
@@ -240,57 +432,34 @@ percentage <- round(prop.table(frequencies)*100,1)
 percentage
 ```
 
-> Patients with a diagnosis of OSA were `r percentage[2]`% (n=`r frequencies[2]`) of the sample.
+> A total `r frequencies[2]` (`r percentage[2]`%) patients used oxygen at home.
 
 ```{r}
 #| include: false
 rm(frequencies,percentage)
 ```
 
-#### Altitude
-
-Summary:
-
-```{r}
-summary(altitude)
-```
-
-Distribution of altitude was assessed earlier. Distribution is very unclear due to very widespread datapoints. Thus, I will create a new variable categorizing values according to the [study by Crocker ME, et al](https://doi.org/10.1016/S2214-109X(19)30543-1).
-
-```{r}
-data <- data %>% 
-  mutate(altitude_cat = cut(altitude,
-                            breaks=c(0,1000,2500),
-                            right=FALSE,
-                            labels=c("Low altitude","Moderate altitude")
-                            )
-         )
-```
-
-```{r}
-#| include: false
-
-detach(data)
-attach(data) 
-# This is done to update the attached dataset with the newly created variable.   
-```
+#### CPAP use
 
 Frequencies:
 
 ```{r}
-frequencies <- table(altitude_cat)
+frequencies <- table(CPAP_use)
 frequencies
 ```
 
 Percentage:
 
 ```{r}
-round(prop.table(frequencies)*100,1)
+percentage <- round(prop.table(frequencies)*100,1)
+percentage
 ```
+
+> whereas `r percentage[2]`% (n=`r frequencies[2]`) reported using CPAP.
 
 ```{r}
 #| include: false
-rm(frequencies)
+rm(frequencies,percentage)
 ```
 
 #### Hemoglobin
@@ -478,6 +647,166 @@ wil
 rm(data_BMI,median_bmi,wil)
 ```
 
+### BMI and asthma
+
+```{r}
+boxplot(BMI ~ asthma,
+        ylab="Body mass index (kg/m²)",
+        xlab="Asthma"
+        )
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.
+
+```{r}
+data_BMI <- data %>% group_by(asthma) 
+
+median_bmi <- data_BMI %>% 
+  summarize(n = n(),
+            median = median(BMI),
+            Q1 = quantile(BMI,0.25),
+            Q3 = quantile(BMI,0.75),
+            min = min(BMI),
+            max = max(BMI)
+            )
+median_bmi
+```
+
+```{r}
+wil <- wilcox.test(BMI ~ asthma, 
+                   data = data_BMI, 
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median BMI was not significantly different in patients with asthma (`r round(median_bmi$median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) compared to those without (`r round(median_bmi$median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
+
+```{r}
+#| include: false
+rm(data_BMI,median_bmi,wil)
+```
+
+### BMI and COPD
+
+```{r}
+boxplot(BMI ~ COPD,
+        ylab="Body mass index (kg/m²)",
+        xlab="Chronic obstructive pulmonary disease"
+        )
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.
+
+```{r}
+data_BMI <- data %>% group_by(COPD) 
+
+median_bmi <- data_BMI %>% 
+  summarize(n = n(),
+            median = median(BMI),
+            Q1 = quantile(BMI,0.25),
+            Q3 = quantile(BMI,0.75),
+            min = min(BMI),
+            max = max(BMI)
+            )
+median_bmi
+```
+
+```{r}
+wil <- wilcox.test(BMI ~ COPD, 
+                   data = data_BMI, 
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median BMI was significantly higher in participants with COPD (`r round(median_bmi$median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) than those without COPD (`r round(median_bmi$median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
+
+```{r}
+#| include: false
+rm(data_BMI,median_bmi,wil)
+```
+
+### BMI and oxygen use
+
+```{r}
+boxplot(BMI ~ oxygen_use,
+        ylab="Body mass index (kg/m²)",
+        xlab="Supplementary oxygen use at home"
+        )
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.
+
+```{r}
+data_BMI <- data %>% group_by(oxygen_use) 
+
+median_bmi <- data_BMI %>% 
+  summarize(n = n(),
+            median = median(BMI),
+            Q1 = quantile(BMI,0.25),
+            Q3 = quantile(BMI,0.75),
+            min = min(BMI),
+            max = max(BMI)
+            )
+median_bmi
+```
+
+```{r}
+wil <- wilcox.test(BMI ~ oxygen_use, 
+                   data = data_BMI, 
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median BMI was significantly higher in patients who reported oxygen use at home (`r round(median_bmi$median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) compared to those with no supplementary oxygen use (`r round(median_bmi$median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p\<0.001).
+
+```{r}
+#| include: false
+rm(data_BMI,median_bmi,wil)
+```
+
+### BMI and CPAP use
+
+```{r}
+boxplot(BMI ~ CPAP_use,
+        ylab="Body mass index (kg/m²)",
+        xlab="Continuous positive airway pressure (CPAP)"
+        )
+```
+
+Distribution not normal and influential outliers. Will assess non-parametrically.
+
+```{r}
+data_BMI <- data %>% group_by(CPAP_use) 
+
+median_bmi <- data_BMI %>% 
+  summarize(n = n(),
+            median = median(BMI),
+            Q1 = quantile(BMI,0.25),
+            Q3 = quantile(BMI,0.75),
+            min = min(BMI),
+            max = max(BMI)
+            )
+median_bmi
+```
+
+```{r}
+wil <- wilcox.test(BMI ~ CPAP_use, 
+                   data = data_BMI, 
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median BMI was significantly higher in participants with CPAP use at home (`r round(median_bmi$median[2],1)`, IQR: `r round(median_bmi$Q1[2],1)`-`r round(median_bmi$Q3[2],1)`) compared to those who did not report CPAP use (`r round(median_bmi$median[1],1)`, IQR: `r round(median_bmi$Q1[1],1)`-`r round(median_bmi$Q3[1],1)`) (p\<0.001).
+
+```{r}
+#| include: false
+rm(data_BMI,median_bmi,wil)
+```
+
 ### Age and SpO2
 
 ```{r}
@@ -605,6 +934,188 @@ t_test
 rm(data_age,mean_age,t_test)
 ```
 
+### Age and asthma
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot.  
+
+data_age <- data %>% group_by(asthma)
+
+ggplot(data_age, aes(x = age, fill=asthma)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(age ~ asthma)
+```
+
+Distribution normal. Will assess mean and variance for further testing.
+
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(), 
+            age_mean = mean(age), 
+            sd = sd(age), 
+            variance = var(age)
+            )
+mean_age
+```
+
+Size per group very different, variances look similar. Welch's t-test more suitable due to differring group size:
+
+```{r}
+t_test <- t.test(age ~ asthma, data = data_age)
+t_test
+```
+
+> Age was not significantly different between participants with asthma (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
+
+```{r}
+#| include: false
+rm(data_age,mean_age,t_test)
+```
+
+### Age and COPD
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot.  
+
+data_age <- data %>% group_by(COPD)
+
+ggplot(data_age, aes(x = age, fill=COPD)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(age ~ COPD)
+```
+
+Group size low to conclude distribution for COPD positive patients. Will assess mean and variance for further testing.
+
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(), 
+            age_mean = mean(age), 
+            sd = sd(age), 
+            variance = var(age)
+            )
+mean_age
+```
+
+Size per group very different. Welch's t-test more suitable:
+
+```{r}
+t_test <- t.test(age ~ COPD, data = data_age)
+t_test
+```
+
+> Age was not significantly different between participants with COPD (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
+
+```{r}
+#| include: false
+rm(data_age,mean_age,t_test)
+```
+
+### Age and oxygen use
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot.  
+
+data_age <- data %>% group_by(oxygen_use)
+
+ggplot(data_age, aes(x = age, fill=oxygen_use)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(age ~ oxygen_use)
+```
+
+Distribution near-normal. Will assess mean and variance for further testing.
+
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(), 
+            age_mean = mean(age), 
+            sd = sd(age), 
+            variance = var(age)
+            )
+mean_age
+```
+
+Size per group very different. Welch's t-test more suitable:
+
+```{r}
+t_test <- t.test(age ~ oxygen_use, data = data_age)
+t_test
+```
+
+> Age was not significantly different between participants with self-reported oxygen use (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
+
+```{r}
+#| include: false
+rm(data_age,mean_age,t_test)
+```
+
+### Age and CPAP use
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot.  
+
+data_age <- data %>% group_by(CPAP_use)
+
+ggplot(data_age, aes(x = age, fill=CPAP_use)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(age ~ CPAP_use)
+```
+
+Distribution near-normal. Will assess mean and variance for further testing.
+
+```{r}
+mean_age <- data_age %>% 
+  summarise(n=n(), 
+            age_mean = mean(age), 
+            sd = sd(age), 
+            variance = var(age)
+            )
+mean_age
+```
+
+Size per group very different, but equal variances. Conventional t-test expected to be robust:
+
+```{r}
+t_test <- t.test(age ~ CPAP_use,
+                 data = data_age,
+                 var.equal = TRUE)
+t_test
+```
+
+> Age was not significantly different between participants with CPAP use (`r round(mean_age$age_mean[2],1)`, sd:`r round(mean_age$sd[2],1)`) and those without (`r round(mean_age$age_mean[1],1)`, sd:`r round(mean_age$sd[1],1)`) (p=`r round(t_test$p.value,3)`).
+
+```{r}
+#| include: false
+rm(data_age,mean_age,t_test)
+```
+
 ### SpO2 and sex
 
 ```{r}
@@ -709,6 +1220,226 @@ wil
 ```
 
 > Patients with sleep apnea had a lower median SpO2 (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) than those without OSA (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p\<0.001).
+
+```{r}
+#| include: false 
+rm(data_spo2,median_spo2,wil)
+```
+
+### SpO2 and asthma
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+data_spo2 <- data %>% group_by(asthma)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=asthma)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(spo2_VPO ~ asthma)
+```
+
+```{r}
+boxplot(spo2_VPO ~ asthma,
+        ylab="SpO2 (%)",
+        xlab="Asthma"
+        )
+```
+
+Distribution not normal, and smaller group size for those with the comorbidity. Will assess non-parametrically.
+
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(), 
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ asthma,
+                   data = data_spo2,
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median SpO2 was not significantly different among those with asthma (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those without (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p=`r round(wil$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(data_spo2,median_spo2,wil)
+```
+
+### SpO2 and COPD
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+data_spo2 <- data %>% group_by(COPD)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=asthma)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(spo2_VPO ~ COPD)
+```
+
+```{r}
+boxplot(spo2_VPO ~ COPD,
+        ylab="SpO2 (%)",
+        xlab="Chronic obstructive pulmonary disease"
+        )
+```
+
+Distribution not normal, and smaller group size for those with the comorbidity. Will assess non-parametrically.
+
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(), 
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ COPD,
+                   data = data_spo2,
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median SpO2 was significantly lower among those with COPD (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those without (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p\<0.001).
+
+```{r}
+#| include: false 
+rm(data_spo2,median_spo2,wil)
+```
+
+### SpO2 and oxygen use at home
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+data_spo2 <- data %>% group_by(oxygen_use)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=oxygen_use)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(spo2_VPO ~ oxygen_use)
+```
+
+```{r}
+boxplot(spo2_VPO ~ oxygen_use,
+        ylab="SpO2 (%)",
+        xlab="Supplementary oxygen use at home"
+        )
+```
+
+Distribution not normal, and smaller group size for those with the comorbidity. Will assess non-parametrically.
+
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(), 
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ oxygen_use,
+                   data = data_spo2,
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median SpO2 was significantly lower among those with supplementary oxygen use at home (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those without (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p\<0.001).
+
+```{r}
+#| include: false 
+rm(data_spo2,median_spo2,wil)
+```
+
+### SpO2 and CPAP use
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+data_spo2 <- data %>% group_by(CPAP_use)
+
+ggplot(data_spo2, aes(x = spo2_VPO, fill=CPAP_use)) +
+  geom_histogram(position = "identity", alpha = 0.4)
+```
+
+```{r}
+#| include: false 
+## Change 'false' for 'true' above to show plot. 
+
+qqPlot(spo2_VPO ~ CPAP_use)
+```
+
+```{r}
+boxplot(spo2_VPO ~ CPAP_use,
+        ylab="SpO2 (%)",
+        xlab="CPAP use at home"
+        )
+```
+
+Distribution not normal, and smaller group size for those with the comorbidity. Will assess non-parametrically.
+
+```{r}
+median_spo2 <- data_spo2 %>% 
+  summarize(n = n(), 
+            spo2_median = median(spo2_VPO), 
+            Q1 = quantile(spo2_VPO,0.25), 
+            Q3 = quantile(spo2_VPO,0.75), 
+            min = min(spo2_VPO), 
+            max = max(spo2_VPO)
+            )
+median_spo2
+```
+
+```{r}
+wil <- wilcox.test(spo2_VPO ~ CPAP_use,
+                   data = data_spo2,
+                   exact = FALSE
+                   )
+wil
+```
+
+> The median SpO2 was significantly lower among those with CPAP use at home (`r round(median_spo2$spo2_median[2],1)`, IQR: `r round(median_spo2$Q1[2],1)`-`r round(median_spo2$Q3[2],1)`) compared to those without (`r round(median_spo2$spo2_median[1],1)`, IQR: `r round(median_spo2$Q1[1],1)`-`r round(median_spo2$Q3[1],1)`) (p\<0.001).
 
 ```{r}
 #| include: false 
@@ -930,12 +1661,840 @@ chi <- chisq.test(frequencies, correct=FALSE)
 chi
 ```
 
+> Sex was associated with OSA (p\<0.001) as men had the diagnosis more frequently compared to women.
+
 ```{r}
 #| include: false 
 rm(mean_exp,frequencies, chi)
 ```
 
-> Sex was associated with OSA (p\<0.001) as men had the diagnosis more frequently compared to women.
+### Sex and asthma
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sex, asthma) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sex)*nlevels(asthma))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sex, asthma)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,asthma),
+        fill=sex),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "Asthma"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sex was not associated with asthma (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sex and COPD
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sex, COPD) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sex)*nlevels(COPD))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sex, COPD)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,COPD),
+        fill=sex),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "COPD"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sex was not associated with COPD (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sex and oxygen use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sex, oxygen_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sex)*nlevels(oxygen_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sex, oxygen_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,oxygen_use),
+        fill=sex),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "Supplementary oxygen use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sex was associated with oxygen use at home (p=`r round(chi$p.value,3)`), oxygen use was more frequent among men than women.
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sex and CPAP use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sex, CPAP_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sex)*nlevels(CPAP_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sex, CPAP_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,CPAP_use),
+        fill=sex),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "CPAP use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sex was associated with CPAP use at home (p\<0.001). CPAP use was more frequent among men than women.
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sex and altitude
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sex, altitude_cat) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sex)*nlevels(altitude_cat))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sex, altitude_cat)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sex,altitude_cat),
+        fill=sex),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("peachpuff","sandybrown")) +
+  labs(
+    y = "Sex",
+    x = "Altitude category"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sex was not associated with altitude category (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sleep apnea and asthma
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sleep_apnea, asthma) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sleep_apnea)*nlevels(asthma))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sleep_apnea, asthma)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sleep_apnea,asthma),
+        fill=asthma),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","mediumpurple4")) +
+  labs(
+    y = "Obstructive sleep apnea",
+    x = "Asthma"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sleep apnea was not associated with asthma (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sleep apnea and COPD
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sleep_apnea, COPD) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sleep_apnea)*nlevels(COPD))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sleep_apnea, COPD)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sleep_apnea,COPD),
+        fill=COPD),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","mediumpurple4")) +
+  labs(
+    y = "Obstructive sleep apnea",
+    x = "COPD"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sleep apnea was associated with COPD (p\<0.001).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sleep apnea and oxygen use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sleep_apnea, oxygen_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sleep_apnea)*nlevels(oxygen_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sleep_apnea, oxygen_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sleep_apnea,oxygen_use),
+        fill=oxygen_use),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","mediumpurple4")) +
+  labs(
+    y = "Obstructive sleep apnea",
+    x = "Oxygen use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sleep apnea was associated with oxygen use at home (p\<0.001).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Sleep apnea and CPAP use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(sleep_apnea, CPAP_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(sleep_apnea)*nlevels(oxygen_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(sleep_apnea, CPAP_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(sleep_apnea,CPAP_use),
+        fill=CPAP_use),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","mediumpurple4")) +
+  labs(
+    y = "Obstructive sleep apnea",
+    x = "CPAP use"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Sleep apnea was associated with CPAP use at home (p\<0.001). All participants reporting a diagnosis of obstructive sleep apnea reported using CPAP at home.
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### COPD and asthma
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(COPD, asthma) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(COPD)*nlevels(asthma))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(COPD, asthma)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(COPD,asthma),
+        fill=asthma),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","gray20")) +
+  labs(
+    y = "COPD",
+    x = "Asthma"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> COPD was not associated with asthma (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### COPD and oxygen use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(COPD, oxygen_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(COPD)*nlevels(oxygen_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(COPD, oxygen_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(COPD,oxygen_use),
+        fill=oxygen_use),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","gray20")) +
+  labs(
+    y = "COPD",
+    x = "Oxygen use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> COPD was associated with oxygen use at home (p\<0.001).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### COPD and CPAP use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(COPD, CPAP_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(COPD)*nlevels(CPAP_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(COPD, CPAP_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(COPD,CPAP_use),
+        fill=CPAP_use),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","gray20")) +
+  labs(
+    y = "COPD",
+    x = "CPAP use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> COPD was associated with CPAP use at home (p\<0.001).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Asthma and oxygen use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(asthma, oxygen_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(asthma)*nlevels(oxygen_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(asthma, oxygen_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(asthma,oxygen_use),
+        fill=oxygen_use),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","darkmagenta")) +
+  labs(
+    y = "Asthma",
+    x = "Oxygen use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Asthma was not associated with oxygen use at home (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+### Asthma and CPAP use
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(asthma, CPAP_use) %>%
+  summarize(
+    mean_expected_freq = n()/(nlevels(asthma)*nlevels(CPAP_use))
+    )
+
+mean_exp
+```
+
+Since value is grater than 5.0, chi-squared without continuity correction is appropriate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(asthma, CPAP_use)
+frequencies
+```
+
+Percentage:
+
+```{r}
+round(prop.table(frequencies,1)*100,1)
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  ggplot() +
+  geom_mosaic(
+    aes(x = product(asthma,CPAP_use),
+        fill=CPAP_use),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey","darkmagenta")) +
+  labs(
+    y = "Asthma",
+    x = "CPAP use at home"
+  ) +
+  theme_mosaic() 
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Asthma was not associated with CPAP use at home (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, chi)
+```
+
+\pagebreak
 
 # Package References
 
@@ -946,24 +2505,24 @@ report::cite_packages(session)
 
 -   Fox J, Weisberg S (2019). *An R Companion to Applied Regression*, Third edition. Sage, Thousand Oaks CA. <https://socialsciences.mcmaster.ca/jfox/Books/Companion/>.
 -   Fox J, Weisberg S, Price B (2022). *carData: Companion to Applied Regression Data Sets*. R package version 3.0-5, <https://CRAN.R-project.org/package=carData>.
--   Grolemund G, Wickham H (2011). "Dates and Times Made Easy with lubridate." *Journal of Statistical Software*, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
+-   Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” *Journal of Statistical Software*, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
 -   Jeppson H, Hofmann H, Cook D (2021). *ggmosaic: Mosaic Plots in the 'ggplot2' Framework*. R package version 0.3.3, <https://CRAN.R-project.org/package=ggmosaic>.
--   Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). "Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption." *CRAN*. <https://easystats.github.io/report/>.
+-   Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). “Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption.” *CRAN*. <https://easystats.github.io/report/>.
 -   Müller K, Wickham H (2023). *tibble: Simple Data Frames*. R package version 3.2.1, <https://CRAN.R-project.org/package=tibble>.
 -   Pinheiro J, Bates D, R Core Team (2023). *nlme: Linear and Nonlinear Mixed Effects Models*. R package version 3.1-164, <https://CRAN.R-project.org/package=nlme>. Pinheiro JC, Bates DM (2000). *Mixed-Effects Models in S and S-PLUS*. Springer, New York. doi:10.1007/b98882 <https://doi.org/10.1007/b98882>.
--   R Core Team (2023). *R: A Language and Environment for Statistical Computing*. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+-   R Core Team (2024). *R: A Language and Environment for Statistical Computing*. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
 -   Rich B (2023). *table1: Tables of Descriptive Statistics in HTML*. R package version 1.4.3, <https://CRAN.R-project.org/package=table1>.
 -   Rinker TW, Kurkiewicz D (2018). *pacman: Package Management for R*. version 0.5.0, <http://github.com/trinker/pacman>.
--   Textor J, van der Zander B, Gilthorpe MS, Liśkiewicz M, Ellison GT (2016). "Robust causal inference using directed acyclic graphs: the R package 'dagitty'." *International Journal of Epidemiology*, *45*(6), 1887-1894. doi:10.1093/ije/dyw341 <https://doi.org/10.1093/ije/dyw341>.
+-   Textor J, van der Zander B, Gilthorpe MS, Liśkiewicz M, Ellison GT (2016). “Robust causal inference using directed acyclic graphs: the R package 'dagitty'.” *International Journal of Epidemiology*, *45*(6), 1887-1894. doi:10.1093/ije/dyw341 <https://doi.org/10.1093/ije/dyw341>.
 -   Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*. Springer-Verlag New York. ISBN 978-3-319-24277-4, <https://ggplot2.tidyverse.org>.
 -   Wickham H (2023). *forcats: Tools for Working with Categorical Variables (Factors)*. R package version 1.0.0, <https://CRAN.R-project.org/package=forcats>.
 -   Wickham H (2023). *stringr: Simple, Consistent Wrappers for Common String Operations*. R package version 1.5.1, <https://CRAN.R-project.org/package=stringr>.
--   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). "Welcome to the tidyverse." *Journal of Open Source Software*, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
+-   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” *Journal of Open Source Software*, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
 -   Wickham H, François R, Henry L, Müller K, Vaughan D (2023). *dplyr: A Grammar of Data Manipulation*. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
 -   Wickham H, Henry L (2023). *purrr: Functional Programming Tools*. R package version 1.0.2, <https://CRAN.R-project.org/package=purrr>.
--   Wickham H, Hester J, Bryan J (2023). *readr: Read Rectangular Text Data*. R package version 2.1.4, <https://CRAN.R-project.org/package=readr>.
--   Wickham H, Vaughan D, Girlich M (2023). *tidyr: Tidy Messy Data*. R package version 1.3.0, <https://CRAN.R-project.org/package=tidyr>.
--   Wood SN (2011). "Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models." *Journal of the Royal Statistical Society (B)*, *73*(1), 3-36. Wood S, N., Pya, S"afken B (2016). "Smoothing parameter and model selection for general smooth models (with discussion)." *Journal of the American Statistical Association*, *111*, 1548-1575. Wood SN (2004). "Stable and efficient multiple smoothing parameter estimation for generalized additive models." *Journal of the American Statistical Association*, *99*(467), 673-686. Wood S (2017). *Generalized Additive Models: An Introduction with R*, 2 edition. Chapman and Hall/CRC. Wood SN (2003). "Thin-plate regression splines." *Journal of the Royal Statistical Society (B)*, *65*(1), 95-114.
+-   Wickham H, Hester J, Bryan J (2024). *readr: Read Rectangular Text Data*. R package version 2.1.5, <https://CRAN.R-project.org/package=readr>.
+-   Wickham H, Vaughan D, Girlich M (2024). *tidyr: Tidy Messy Data*. R package version 1.3.1, <https://CRAN.R-project.org/package=tidyr>.
+-   Wood SN (2011). “Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models.” *Journal of the Royal Statistical Society (B)*, *73*(1), 3-36. Wood S, N., Pya, S"afken B (2016). “Smoothing parameter and model selection for general smooth models (with discussion).” *Journal of the American Statistical Association*, *111*, 1548-1575. Wood SN (2004). “Stable and efficient multiple smoothing parameter estimation for generalized additive models.” *Journal of the American Statistical Association*, *99*(467), 673-686. Wood S (2017). *Generalized Additive Models: An Introduction with R*, 2 edition. Chapman and Hall/CRC. Wood SN (2003). “Thin-plate regression splines.” *Journal of the Royal Statistical Society (B)*, *65*(1), 95-114.
 
 ```{r}
 #| include: false

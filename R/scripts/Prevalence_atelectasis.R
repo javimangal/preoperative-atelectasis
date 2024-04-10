@@ -84,7 +84,5 @@ location
 atelectasis <- atelectasis %>%
   right_join(location, by = "type_obesity") %>%
   mutate(
-    confint = replace(confint, atelectasis == "No", NA),
-    Unilateral = replace(Unilateral, atelectasis == "No", NA),
-    Bilateral = replace(Bilateral, atelectasis == "No", NA)
+    confint = replace(confint, atelectasis == "No", NA)
   )

@@ -10,12 +10,7 @@ df_pred <- expand_grid(
   atelectasis_percent = seq(
     from=min(data$atelectasis_percent),
     to=max(data$atelectasis_percent),
-    length.out = 100), 
-  age = mean(data$age),
-  hb = mean(data$hb, na.rm = TRUE),
-  sex = "Woman",
-  sleep_apnea = "No",
-  altitude_cat = "Low altitude"
+    length.out = 100)
 )
 
 # Obtain predictions from the fully adjusted model:   
@@ -110,16 +105,16 @@ ggsave("Figure3.png",plot=Figure3,
 ggsave("Figure3.pdf",plot=Figure3,
        path=figfolder, 
        width = 18,  height = 6, units = "in", 
-       dpi = 300)
+       dpi = 1200)
 
 # Rebuild plot and stack them
-png(filename=paste(figfolder,"/FigureS4.png",sep=""),width=8, height=6, units="in", res=300)
+png(filename=paste(figfolder,"/FigureS4.pdf",sep=""),width=8, height=6, units="in", res=1200)
 vis.gam(model_plus,
         view=c("BMI","atelectasis_percent"),
         color = "gray",
         type = "response",
         plot.type = "persp",
-        theta= -50,
+        theta= -45,
         ylab = "Atelectasis percent",
         xlab = "Body mass index",
         zlab = "SpO2",

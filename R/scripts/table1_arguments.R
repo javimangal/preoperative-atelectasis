@@ -95,11 +95,9 @@ rndr <- function(x, name, ...) {
 # Generate table 1:
 table1 <- table1(
   ~ sex + age + weight + height + BMI + surgical_procedure +
-    ARISCAT_group + spo2_VPO + altitude + hypertension +
-    diabetes + sleep_apnea + hypothyroidism + dyslipidemia +
-    antidepressant_use + CORADS + glucose + creatinine + urea +
-    hb + hct + leu + neu_absolute + linf_absolute +
-    mon_absolute + platelets |
+    ARISCAT_group + CORADS + spo2_VPO + altitude + myocardial_infarction + 
+    hypertension + diabetes + asthma + COPD + sleep_apnea + oxygen_use + 
+    CPAP_use + hypothyroidism + dyslipidemia + antidepressant_use |
     type_obesity,
   data = data,
   overall = c(left = "Total"),

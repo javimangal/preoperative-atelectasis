@@ -1,0 +1,20 @@
+R version 4.3.3 (2024-02-29 ucrt)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 11 x64 (build 22631)
+
+Matrix products: default
+
+
+attached base packages:
+[1] stats     graphics  grDevices datasets  utils     methods   base     
+
+other attached packages:
+ [1] report_0.5.8        flextable_0.9.5     gt_0.10.1          
+ [4] boot_1.3-30         mgcv_1.9-1          nlme_3.1-164       
+ [7] WeightIt_1.0.0      CBPS_0.23           glmnet_4.1-8       
+[10] Matrix_1.6-5        numDeriv_2016.8-1.1 nnet_7.3-19        
+[13] MatchIt_4.5.5       MASS_7.3-60.0.1     table1_1.4.3       
+[16] lubridate_1.9.3     forcats_1.0.0       stringr_1.5.1      
+[19] dplyr_1.1.4         purrr_1.0.2         readr_2.1.5        
+[22] tidyr_1.3.1         tibble_3.2.1        ggplot2_3.5.0      
+[25] tidyverse_2.0.0     pacman_0.5.1       

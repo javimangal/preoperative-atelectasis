@@ -42,7 +42,7 @@ dev.off()
 prop_figS3b_sub <- prop_figS3b[1:8,3:5]
 
 # Rebuild plot and stack them
-png(filename=paste(figfolder,"/FigureS3.png",sep=""),width=8, height=5, units="in", res=300)
+png(filename=paste(figfolder,"/FigureS3.pdf",sep=""),width=8, height=5, units="in", res=1200)
 layout(matrix(c(1,2), ncol=2), widths=c(5,5))
 par(mgp=c(0,2,0))  
 barplot(prop_figS3a,beside=TRUE,ylim=c(0,1),yaxt='n',

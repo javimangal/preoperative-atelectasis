@@ -16,6 +16,8 @@ format:
 editor: visual
 ---
 
+\pagebreak
+
 # Setup
 
 #### Packages used
@@ -88,6 +90,8 @@ data <- read.csv("../data/processed/atelectasis_included.csv",
 source("scripts/variable_names.R")
 
 ```
+
+\pagebreak
 
 # Outcome variable
 
@@ -213,7 +217,7 @@ round(prop.table(frequencies,1),4)*100
 
 Mosaic Plot
 
-```{r, fig.height=3, fig.width=5}
+```{r, fig.height=3, fig.width=6}
 ggplot(data = data) +
   geom_mosaic(
     aes(x = product(type_obesity,atelectasis_location),
@@ -225,7 +229,7 @@ ggplot(data = data) +
     y = "Obesity class",
     x = "Atelectasis location"
   ) +
-  theme_mosaic() 
+  theme_mosaic() + guides(fill="none")
 ```
 
 ```{r}
@@ -244,7 +248,7 @@ source("scripts/Prevalence_atelectasis.R", local = knitr::knit_global())
 
 > The prevalence of atelectasis was greater in higher obesity classes: class 1, n=`r atelectasis$n[3]` (`r atelectasis$prev[3]`%, 95%CI:`r atelectasis$confint[3]`); class 2, n=`r atelectasis$n[5]` (`r atelectasis$prev[5]`%, 95%CI:`r atelectasis$confint[5]`); and class 3, n=`r atelectasis$n[7]` (`r atelectasis$prev[7]`%, 95%CI:`r atelectasis$confint[7]`) (p\<0.001).
 
-> Of those who had atelectasis, the most frequent presentation was unilateral n=`r atelectasis$Unilateral[1]`, compared to bilateral n=`r atelectasis$Bilateral[1]`. When examining this by obesity class, the observed distribution was not significantly different for those with class 1, 2, and 3 obesity categories (n=`r atelectasis$Unilateral[3]`, n=`r atelectasis$Unilateral[5]`, and n=`r atelectasis$Unilateral[7]`, respectively) (p=`r round(chi$p.value,3)`).
+> Of those who had atelectasis, the most frequent presentation was the right lung base predominance n=`r atelectasis$Unilateral[1]`, compared to bilateral lung bases n=`r atelectasis$Bilateral[1]`. When examining this by obesity class, the observed distribution was not significantly different for those with class 1, 2, and 3 obesity categories (n=`r atelectasis$Unilateral[3]`, n=`r atelectasis$Unilateral[5]`, and n=`r atelectasis$Unilateral[7]`, respectively) (p=`r round(chi$p.value,3)`).
 
 ```{r}
 #| include: false 
@@ -427,7 +431,9 @@ random_sample_3 %>% summarize(
 
 ```{r}
 #| include: false
-rm(boot_atel,mean_boot,boot_ci,data_class_1,data_class_2,data_class_3,boot_class1,mean_boot_class1,boot_ci_class1,boot_class2,mean_boot_class2,boot_ci_class2,boot_class3,mean_boot_class3,boot_ci_class3)
+rm(list=setdiff(ls(pattern = "boot"), lsf.str()))
+rm(list=setdiff(ls(pattern = "class"), lsf.str()))
+rm(list=setdiff(ls(pattern = "sample"), lsf.str()))
 ```
 
 ##### Atelectasis percentage by obesity class
@@ -578,7 +584,7 @@ Interestingly, this figure is almost a mirror image of the priorly created plot 
 
 ```{r}
 #| include: false
-rm(AIC_k2,AIC_k3,AIC_k4,AIC_k5,AIC_k6,AIC_k7,AIC_k8,AIC_k10,model,spearman,fig1a)
+rm(AIC_k2,AIC_k4,AIC_k5,AIC_k6,AIC_k7,AIC_k8,model,spearman,fig1a)
 ```
 
 ## Atelectasis - age
@@ -801,7 +807,7 @@ ggplot(data = data) +
     y = "Atelectasis location",
     x = "Obstructive sleep apnea"
   ) +
-  theme_mosaic() 
+  theme_mosaic() + guides(fill="none")
 ```
 
 ```{r}
@@ -815,6 +821,359 @@ chi
 #| include: false 
 rm(mean_exp,frequencies, percent, chi)
 ```
+
+## Atelectasis - Asthma
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(asthma, atelectasis) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(asthma)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(asthma, atelectasis)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percent <- round((prop.table(frequencies, 1)*100),2)
+percent
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(
+    aes(x = product(atelectasis,asthma), 
+        fill=atelectasis),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  labs(
+    y = "Atelectasis",
+    x = "Asthma"
+  ) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Patients with a diagnosis of asthma did not have atelectasis more frequently (`r round(percent[2,1],1)`%) than those without the diagnosis (`r round(percent[1,1],1)`%) (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, percent, chi)
+```
+
+#### Atelectasis location by asthma status 
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(asthma, atelectasis_location) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(asthma)*nlevels(atelectasis_location)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(asthma, atelectasis_location)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percent <- round((prop.table(frequencies, 1)*100),2)
+percent
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(aes(
+    x = product(atelectasis_location,asthma),
+    fill=atelectasis_location),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("seagreen1","seagreen4")) +
+  labs(
+    y = "Atelectasis location",
+    x = "Asthma"
+  ) +
+  theme_mosaic() + guides(fill="none")
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> The location of atelectasis was not different among patients with and without asthma (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, percent, chi)
+```
+
+
+## Atelectasis - COPD
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(COPD, atelectasis) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(COPD)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(COPD, atelectasis)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percent <- round((prop.table(frequencies, 1)*100),2)
+percent
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(
+    aes(x = product(atelectasis,COPD), 
+        fill=atelectasis),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  labs(
+    y = "Atelectasis",
+    x = "COPD"
+  ) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Patients with a diagnosis of COPD had atelectasis more frequently (`r round(percent[2,1],1)`%) than those without the diagnosis (`r round(percent[1,1],1)`%) (p\<0.001).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, percent, chi)
+```
+
+#### Atelectasis location by COPD
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(COPD, atelectasis_location) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(COPD)*nlevels(atelectasis_location)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(COPD, atelectasis_location)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percent <- round((prop.table(frequencies, 1)*100),2)
+percent
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(aes(
+    x = product(atelectasis_location,COPD),
+    fill=atelectasis_location),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("seagreen1","seagreen4")) +
+  labs(
+    y = "Atelectasis location",
+    x = "COPD"
+  ) +
+  theme_mosaic() + guides(fill="none")
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> The location of atelectasis was not different among patients with and without COPD (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, percent, chi)
+```
+
+## Atelectasis - Oxygen use   
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(oxygen_use, atelectasis) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(oxygen_use)*nlevels(atelectasis)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(oxygen_use, atelectasis)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percent <- round((prop.table(frequencies, 1)*100),2)
+percent
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+data %>% 
+  mutate(atelectasis = fct_relevel(atelectasis, "No", "Yes")) %>%
+ggplot() +
+  geom_mosaic(
+    aes(x = product(atelectasis,oxygen_use), 
+        fill=atelectasis),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("grey95","lightsteelblue4")) +
+  labs(
+    y = "Atelectasis",
+    x = "Oxygen use at home"
+  ) +
+  theme_mosaic() + 
+  theme(axis.text.x=element_text(size=rel(0.8)))
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> Patients who used oxygen at home had atelectasis more frequently (`r round(percent[2,1],1)`%) than those who did not (`r round(percent[1,1],1)`%) (p\<0.001).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, percent, chi)
+```
+
+#### Atelectasis location by OSA
+
+Mean expected frequency:
+
+```{r}
+mean_exp <- data %>% 
+  drop_na(oxygen_use, atelectasis_location) %>% 
+  summarize(mean_expected_freq = n()/(nlevels(oxygen_use)*nlevels(atelectasis_location)))
+
+mean_exp
+```
+
+Mean expected frequency is greater than 5.0, so chi-squared without continuity correction is adequate.
+
+Frequencies:
+
+```{r}
+frequencies <- table(oxygen_use, atelectasis_location)
+frequencies
+```
+
+Percentage:
+
+```{r}
+percent <- round((prop.table(frequencies, 1)*100),2)
+percent
+```
+
+Mosaic Plot
+
+```{r, fig.height=3, fig.width=5}
+ggplot(data = data) +
+  geom_mosaic(aes(
+    x = product(atelectasis_location,oxygen_use),
+    fill=atelectasis_location),
+    na.rm = TRUE
+    ) +
+  scale_fill_manual(values=c("seagreen1","seagreen4")) +
+  labs(
+    y = "Atelectasis location",
+    x = "Oxygen use at home"
+  ) +
+  theme_mosaic() + guides(fill="none")
+```
+
+```{r}
+chi <- chisq.test(frequencies, correct=FALSE)
+chi
+```
+
+> The location of atelectasis was not different according to oxygen use status (p=`r round(chi$p.value,3)`).
+
+```{r}
+#| include: false 
+rm(mean_exp,frequencies, percent, chi)
+```
+
 
 ## Atelectasis - SpO2
 
@@ -1128,25 +1487,28 @@ datamodel %>% mutate(
 
 Sleep apnea was more common with higher BMI categories and also with higher atelectasis percentage. Atelectasis percent increases at higher obesity classes.
 
-# Package References   
+\pagebreak
+
+# Package References
+
 ```{r}
 #| include: false
 report::cite_packages(session)
 ```
 
+  - Angelo Canty, B. D. Ripley (2024). _boot: Bootstrap R (S-Plus) Functions_. R package version 1.3-30. A. C. Davison, D. V. Hinkley (1997). _Bootstrap Methods and Their Applications_. Cambridge University Press, Cambridge. ISBN 0-521-57391-2, <doi:10.1017/CBO9780511802843>.
   - Auguie B (2017). _gridExtra: Miscellaneous Functions for "Grid" Graphics_. R package version 2.3, <https://CRAN.R-project.org/package=gridExtra>.
-  - Canty A, Ripley BD (2022). _boot: Bootstrap R (S-Plus) Functions_. R package version 1.3-28.1. Davison AC, Hinkley DV (1997). _Bootstrap Methods and Their Applications_. Cambridge University Press, Cambridge. ISBN 0-521-57391-2, <http://statwww.epfl.ch/davison/BMA/>.
   - Fox J, Weisberg S (2019). _An R Companion to Applied Regression_, Third edition. Sage, Thousand Oaks CA. <https://socialsciences.mcmaster.ca/jfox/Books/Companion/>.
   - Fox J, Weisberg S, Price B (2022). _carData: Companion to Applied Regression Data Sets_. R package version 3.0-5, <https://CRAN.R-project.org/package=carData>.
   - Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” _Journal of Statistical Software_, *40*(3), 1-25. <https://www.jstatsoft.org/v40/i03/>.
-  - Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2023). _gt: Easily Create Presentation-Ready Display Tables_. R package version 0.10.0, <https://CRAN.R-project.org/package=gt>.
+  - Iannone R, Cheng J, Schloerke B, Hughes E, Lauer A, Seo J (2024). _gt: Easily Create Presentation-Ready Display Tables_. R package version 0.10.1, <https://CRAN.R-project.org/package=gt>.
   - Jeppson H, Hofmann H, Cook D (2021). _ggmosaic: Mosaic Plots in the 'ggplot2' Framework_. R package version 0.3.3, <https://CRAN.R-project.org/package=ggmosaic>.
   - Makowski D, Lüdecke D, Patil I, Thériault R, Ben-Shachar M, Wiernik B (2023). “Automated Results Reporting as a Practical Tool to Improve Reproducibility and Methodological Best Practices Adoption.” _CRAN_. <https://easystats.github.io/report/>.
   - Müller K, Wickham H (2023). _tibble: Simple Data Frames_. R package version 3.2.1, <https://CRAN.R-project.org/package=tibble>.
   - Neuwirth E (2022). _RColorBrewer: ColorBrewer Palettes_. R package version 1.1-3, <https://CRAN.R-project.org/package=RColorBrewer>.
   - Peng RD (2019). _simpleboot: Simple Bootstrap Routines_. R package version 1.1-7, <https://CRAN.R-project.org/package=simpleboot>.
   - Pinheiro J, Bates D, R Core Team (2023). _nlme: Linear and Nonlinear Mixed Effects Models_. R package version 3.1-164, <https://CRAN.R-project.org/package=nlme>. Pinheiro JC, Bates DM (2000). _Mixed-Effects Models in S and S-PLUS_. Springer, New York. doi:10.1007/b98882 <https://doi.org/10.1007/b98882>.
-  - R Core Team (2023). _R: A Language and Environment for Statistical Computing_. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
+  - R Core Team (2024). _R: A Language and Environment for Statistical Computing_. R Foundation for Statistical Computing, Vienna, Austria. <https://www.R-project.org/>.
   - Rich B (2023). _table1: Tables of Descriptive Statistics in HTML_. R package version 1.4.3, <https://CRAN.R-project.org/package=table1>.
   - Rinker TW, Kurkiewicz D (2018). _pacman: Package Management for R_. version 0.5.0, <http://github.com/trinker/pacman>.
   - Wickham H (2016). _ggplot2: Elegant Graphics for Data Analysis_. Springer-Verlag New York. ISBN 978-3-319-24277-4, <https://ggplot2.tidyverse.org>.
@@ -1155,10 +1517,10 @@ report::cite_packages(session)
   - Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” _Journal of Open Source Software_, *4*(43), 1686. doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
   - Wickham H, François R, Henry L, Müller K, Vaughan D (2023). _dplyr: A Grammar of Data Manipulation_. R package version 1.1.4, <https://CRAN.R-project.org/package=dplyr>.
   - Wickham H, Henry L (2023). _purrr: Functional Programming Tools_. R package version 1.0.2, <https://CRAN.R-project.org/package=purrr>.
-  - Wickham H, Hester J, Bryan J (2023). _readr: Read Rectangular Text Data_. R package version 2.1.4, <https://CRAN.R-project.org/package=readr>.
-  - Wickham H, Vaughan D, Girlich M (2023). _tidyr: Tidy Messy Data_. R package version 1.3.0, <https://CRAN.R-project.org/package=tidyr>.
+  - Wickham H, Hester J, Bryan J (2024). _readr: Read Rectangular Text Data_. R package version 2.1.5, <https://CRAN.R-project.org/package=readr>.
+  - Wickham H, Vaughan D, Girlich M (2024). _tidyr: Tidy Messy Data_. R package version 1.3.1, <https://CRAN.R-project.org/package=tidyr>.
   - Wood SN (2011). “Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric generalized linear models.” _Journal of the Royal Statistical Society (B)_, *73*(1), 3-36. Wood S, N., Pya, S"afken B (2016). “Smoothing parameter and model selection for general smooth models (with discussion).” _Journal of the American Statistical Association_, *111*, 1548-1575. Wood SN (2004). “Stable and efficient multiple smoothing parameter estimation for generalized additive models.” _Journal of the American Statistical Association_, *99*(467), 673-686. Wood S (2017). _Generalized Additive Models: An Introduction with R_, 2 edition. Chapman and Hall/CRC. Wood SN (2003). “Thin-plate regression splines.” _Journal of the Royal Statistical Society (B)_, *65*(1), 95-114.
-  
+
 ```{r}
 #| include: false
 
