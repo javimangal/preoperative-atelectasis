@@ -24,9 +24,10 @@
 # RStudio files
 .Rproj.user/
 
-# html, pdf and image files within R folder
+# html, pdf, docx, and image files within R folder
 /R/*.html
 /R/*.pdf
+/R/*.docx
 /R/images
 
 # ARISCAT results (work in progress)
