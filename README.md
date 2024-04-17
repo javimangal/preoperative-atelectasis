@@ -47,7 +47,6 @@ The project structure distinguishes three kinds of folders:
 ├── CITATION.cff
 ├── LICENSE
 ├── README.md
-├── requirements.txt
 ├── preoperative_atelectasis.Rproj
 ├── data                  <- All project data files
 │   ├── processed         <- The final, canonical data sets for modeling. (PG)

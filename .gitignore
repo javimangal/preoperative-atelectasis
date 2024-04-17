@@ -36,7 +36,6 @@
 # Response to reviewers (peer-review document)
 /R/response_reviewers.qmd
 
-
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
@@ -57,6 +56,10 @@ vignettes/*.pdf
 
 # Manuscript in progress
 docs/manuscript/*.docx
+docs/manuscript/*.tmp
+
+# File use to join DAGs in the same panel
+docs/DAG/*.svg
 
 # translation temp files
 po/*~
