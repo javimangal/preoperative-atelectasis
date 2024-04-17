@@ -108,6 +108,21 @@ ggsave("Figure3.pdf",plot=Figure3,
        dpi = 1200)
 
 # Figure S5 
+png(filename=paste(figfolder,"/FigureS5.png",sep=""),width=8, height=6, units="in", res=1200)
+vis.gam(model_plus,
+        view=c("BMI","atelectasis_percent"),
+        color = "gray",
+        type = "response",
+        plot.type = "persp",
+        theta= -45,
+        ylab = "Atelectasis percent",
+        xlab = "Body mass index",
+        zlab = "SpO2",
+        main = "Predicted SpO2"
+)
+dev.off()
+
+
 png(filename=paste(figfolder,"/FigureS5.pdf",sep=""),width=8, height=6, units="in", res=1200)
 vis.gam(model_plus,
         view=c("BMI","atelectasis_percent"),
