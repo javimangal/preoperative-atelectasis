@@ -23,7 +23,7 @@ canada <- ne_states(country = "canada", returnclass = "sf") %>%
 usa <- left_join(usa, table, by = "name")
 canada <- left_join(canada, table, by = "name")
 
-figS2 <- plot_ly(
+figS3 <- plot_ly(
   split = ~name, color = ~n, colors = "Blues",
   stroke = I("black"), span = I(1),
   height = 450,
@@ -47,18 +47,18 @@ fig_add <- plot_ly(
   cells = list(values = unname(table))
 )
 
-fig <- subplot(fig_add, figS2,
+fig <- subplot(fig_add, figS3,
   nrows = 1,
   margin = 1
 )
 
 # Save as PNG
 save_image(fig,
-  file = paste(figfolder, "/FigureS2.png", sep = ""),
+  file = paste(figfolder, "/FigureS3.png", sep = ""),
   width = 800, height = 450
 )
 
 # Save as PDF
 save_image(fig,
-  file = paste(figfolder, "/FigureS2.pdf", sep = "")
+  file = paste(figfolder, "/FigureS3.pdf", sep = "")
 )

@@ -107,8 +107,8 @@ ggsave("Figure3.pdf",plot=Figure3,
        width = 18,  height = 6, units = "in", 
        dpi = 1200)
 
-# Rebuild plot and stack them
-png(filename=paste(figfolder,"/FigureS4.pdf",sep=""),width=8, height=6, units="in", res=1200)
+# Figure S5 
+png(filename=paste(figfolder,"/FigureS5.pdf",sep=""),width=8, height=6, units="in", res=1200)
 vis.gam(model_plus,
         view=c("BMI","atelectasis_percent"),
         color = "gray",

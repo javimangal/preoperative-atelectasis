@@ -15,6 +15,7 @@ format:
     documentclass: scrartcl
 editor: visual
 ---
+
 \pagebreak
 
 # Setup
@@ -829,7 +830,7 @@ vis.gam(model_plus,
 
 ### Figure 3
 
-The 2D plot was recreated with the accompanying sourced script ***Figure3.R*** which also saves the 3D plot as FigureS4.
+The 2D plot was recreated with the accompanying sourced script ***Figure3.R*** which also saves the 3D plot as FigureS5.
 
 ```{r}
 #| include: false

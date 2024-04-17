@@ -489,9 +489,9 @@ chi <- chisq.test(frequencies, correct=TRUE)
 chi
 ```
 
-##### Figure S3
+##### Figure S4
 
-Figure created with sourced script ***FigureS3.R***
+Figure created with sourced script ***FigureS4.R***
 
 ```{r}
 #| include: false
@@ -502,15 +502,15 @@ data$atelectasis_percent[data$atelectasis_percent==27.5] <- 17.5
 detach(data)
 attach(data)
 
-source("scripts/FigureS3.R")
+source("scripts/FigureS4.R")
 ```
 
-![Figure S3. Atelectasis percentage on chest CT by obesity categories.](images/Figure2.jpg)
+![Figure S4. Atelectasis percentage on chest CT by obesity categories.](images/FigureS4.jpg)
 
 ```{r}
 #| include: false
-rm(mean_exp,frequencies,percent,chi,FigureS3,
-   prop_figS3a,prop_figS3b,prop_figS3b_sub)
+rm(mean_exp,frequencies,percent,chi,FigureS4,
+   prop_figS4a,prop_figS4b,prop_figS4b_sub)
 ```
 
 \pagebreak
