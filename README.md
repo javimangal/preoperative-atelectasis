@@ -5,11 +5,13 @@
   </a>
 </p>
 
-[![Repository DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10211242.svg)](https://doi.org/10.5281/zenodo.10211242) [![Dataverse](https://img.shields.io/badge/Dataverse%20DOI-10.7910/DVN/4JZZLB-red)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB) [![Preprint DOI](https://img.shields.io/badge/preprint_DOI-10.1101%2F2024.01.11.24301138v1-%23000080?label=medRxiv&link=https%3A%2F%2Fwww.medrxiv.org%2Fcontent%2F10.1101%2F2024.01.11.24301138v1)](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v1)
+[![Repository DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10211242.svg)](https://doi.org/10.5281/zenodo.10211242) [![Dataverse](https://img.shields.io/badge/Dataverse%20DOI-10.7910/DVN/4JZZLB-red)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB) [![Preprint DOI](https://img.shields.io/badge/preprint_DOI-10.1101%2F2024.01.11.24301138v2-%23000080?label=medRxiv&link=https%3A%2F%2Fwww.medrxiv.org%2Fcontent%2F10.1101%2F2024.01.11.24301138v2)](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2)
 
 # Description
 
-This repository contains the documentation for reproducibility of the study ***"Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study"***. The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The first version of this manuscript was made available as a [preprint in medRxiv](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v1), and both the replication data (v1) and code (v1) for that manuscript are cited within the preprint. The current status of the repository is reflective of the manuscript that is undergoing peer review in an international journal and will be deposited in zenodo as v2 upon publication of the peer-reviewed article. 
+This repository contains the documentation for reproducibility of the study ***"Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study"***. The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The current version of the manuscript is available in [medRxiv](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2). The [first version](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v1) of this manuscript is also available through medRxiv, and both the replication data (v1) and code (v1) for that manuscript are cited within the preprint. The current status of the repository is reflective of the manuscript that is undergoing peer review in an international journal and will be deposited in zenodo as v2 upon publication of the peer-reviewed article. 
+
+This study was presented in the Annual Netherlands Epidemiology Congress [WEON 2024](https://weon.nl/). The poster presented in the congress is available in the [docs folder](docs/manuscript/Poster-WEON-2024.pdf). 
 
 ## Getting started
 

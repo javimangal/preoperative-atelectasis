@@ -61,6 +61,12 @@ docs/manuscript/*.tmp
 # File use to join DAGs in the same panel
 docs/DAG/*.svg
 
+# File containing qr codes
+docs/manuscript/qr
+
+# svg files in figure folder used to render poster
+results/output_figures/*.svg
+
 # translation temp files
 po/*~
 
