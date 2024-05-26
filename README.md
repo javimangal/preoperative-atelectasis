@@ -34,7 +34,7 @@ I recommend that the **.qmd** files are opened and ran in sequential order, alth
 -   [Part 7](R/Part_7_Posthoc_analysis.qmd). Posthoc analyses. [PDF](docs/reports/Part_7_Posthoc_analysis.pdf)
 -   [Part 8](R/Part_8_Statistical_Modelling_Low_SpO2.qmd). Mediation analysis of the effect of BMI on SpO2, mediated through atelectasis, distinguishing between high and low SpO2 values. [PDF](docs/reports/Part_8_Statistical_Modelling_Low_SpO2.pdf)
 
-Although I have made significant efforts to ensure reproducibility of this project, I encourage you to contact me or post a request in this repository in case you encounter any issues.   
+Although I have made significant efforts to ensure reproducibility of this project, I encourage you to [contact me](mailto:j.mancillagalindo@uu.nl) or post a request in this repository in case you encounter any issues.   
 
 ## Project Structure
 
