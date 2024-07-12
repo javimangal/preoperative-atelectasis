@@ -9,9 +9,9 @@
 
 # Description
 
-This repository contains the documentation for reproducibility of the study ***"Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study"***. The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The current version of the manuscript is available in [medRxiv](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2). The [first version](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v1) of this manuscript is also available through medRxiv, and both the replication data (v1) and code (v1) for that manuscript are cited within the preprint. The current status of the repository is reflective of the manuscript that is undergoing peer review in an international journal and will be deposited in zenodo as v2 upon publication of the peer-reviewed article. 
+This repository contains the documentation for reproducibility of the study ***"Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study"***. The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The current version of the manuscript is available in [medRxiv](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2). The [first version](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v1) of this manuscript is also available through medRxiv, and both the replication data (v1) and code (v1) for that manuscript are cited within the preprint. The current status of the repository is reflective of the manuscript that has been accepted for publication in the peer-reviewed journal [*Anesthesia & Analgesia*](https://journals.lww.com/anesthesia-analgesia/pages/default.aspx). 
 
-This study was presented in the Annual Netherlands Epidemiology Congress [WEON 2024](https://weon.nl/). The poster presented in the congress is available in the [docs folder](docs/manuscript/Poster-WEON-2024.pdf). 
+This study was presented as a [poster](docs/manuscript/Poster-WEON-2024.pdf)in the Annual Netherlands Epidemiology Congress [WEON 2024](https://weon.nl/) and can be found in the [docs folder](docs/manuscript/). 
 
 ## Getting started
 

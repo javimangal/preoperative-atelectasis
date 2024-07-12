@@ -2,8 +2,10 @@ Author: Javier Mancilla Galindo
 ORCiD: https://orcid.org/0000-0002-0718-467X 
 Title: Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study
 
-The following text can be copied into the "Model Code" box in https://www.dagitty.net/dags.html 
-After doing this and clicking the "Update DAG" button, you should be able to visualize the directed acyclic (DAG) used in this study:    
+This DAG and its code can be directly consulted in the dagitty website through this link: https://dagitty.net/mhiUeH9YK.  
+
+Alternatively, the following text can be copied into the "Model Code" box in https://www.dagitty.net/dags.html 
+After doing this and clicking the "Update DAG" button, you should be able to visualize the directed acyclic graph (DAG) used in this study:    
 
 dag {
 bb="-3.216,-2.051,2.758,2.229"

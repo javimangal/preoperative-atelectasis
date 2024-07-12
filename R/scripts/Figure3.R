@@ -1,4 +1,3 @@
-
 # Create a data frame with possible combinations. 
 # Confounders will be set either to their mean value or reference category
 df_pred <- expand_grid(
@@ -107,8 +106,8 @@ ggsave("Figure3.pdf",plot=Figure3,
        width = 18,  height = 6, units = "in", 
        dpi = 1200)
 
-# Figure S5 
-png(filename=paste(figfolder,"/FigureS5.png",sep=""),width=8, height=6, units="in", res=1200)
+# Figure S6 
+png(filename=paste(figfolder,"/FigureS6.png",sep=""),width=8, height=6, units="in", res=1200)
 vis.gam(model_plus,
         view=c("BMI","atelectasis_percent"),
         color = "gray",
@@ -123,7 +122,7 @@ vis.gam(model_plus,
 dev.off()
 
 
-png(filename=paste(figfolder,"/FigureS5.pdf",sep=""),width=8, height=6, units="in", res=1200)
+png(filename=paste(figfolder,"/FigureS6.pdf",sep=""),width=8, height=6, units="in", res=1200)
 vis.gam(model_plus,
         view=c("BMI","atelectasis_percent"),
         color = "gray",

@@ -119,7 +119,7 @@ This map was built by partly using code adapted from [contribution by cpsievert]
 source("scripts/Map_USA_Canada.R")
 fig
 
-rm(canada, usa, fig, fig_add, figS3, table, us_laea)
+rm(canada, usa, fig, fig_add, figS4, table, us_laea)
 ```
 
 # Distribution of numerical variables

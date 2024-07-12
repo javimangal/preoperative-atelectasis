@@ -67,6 +67,9 @@ docs/manuscript/qr
 # svg files in figure folder used to render poster
 results/output_figures/*.svg
 
+# License figure S3
+results/output_figures/License_FigureS3.pdf
+
 # translation temp files
 po/*~
 
