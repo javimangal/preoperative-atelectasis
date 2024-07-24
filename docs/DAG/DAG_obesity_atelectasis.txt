@@ -2,7 +2,7 @@ Author: Javier Mancilla Galindo
 ORCiD: https://orcid.org/0000-0002-0718-467X 
 Title: Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study
 
-This DAG and its code can be directly consulted in the dagitty website through this link: https://dagitty.net/mhiUeH9YK.  
+This DAG and its code can be directly consulted in the dagitty website through this link: https://dagitty.net/mrh7BiyBS.  
 
 Alternatively, the following text can be copied into the "Model Code" box in https://www.dagitty.net/dags.html 
 After doing this and clicking the "Update DAG" button, you should be able to visualize the directed acyclic graph (DAG) used in this study:    
@@ -44,7 +44,6 @@ asthma -> CPAP_use
 asthma -> atelectasis_percent
 asthma -> oxygen_use
 asthma -> spo2_VPO
-asthma <-> sleep_apnea
 atelectasis_percent -> CPAP_use
 atelectasis_percent -> oxygen_use
 atelectasis_percent -> spo2_VPO
@@ -59,6 +58,7 @@ sex -> spo2_VPO
 sex -> type_obesity
 sleep_apnea -> COPD
 sleep_apnea -> CPAP_use
+sleep_apnea -> asthma
 sleep_apnea -> atelectasis_percent
 sleep_apnea -> oxygen_use
 sleep_apnea -> spo2_VPO
@@ -71,3 +71,4 @@ type_obesity -> oxygen_use
 type_obesity -> sleep_apnea
 type_obesity -> spo2_VPO [pos="-0.371,-2.042"]
 }
+

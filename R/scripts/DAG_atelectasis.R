@@ -35,7 +35,6 @@ asthma -> CPAP_use
 asthma -> atelectasis_percent
 asthma -> oxygen_use
 asthma -> spo2_VPO
-asthma <-> sleep_apnea
 atelectasis_percent -> CPAP_use
 atelectasis_percent -> oxygen_use
 atelectasis_percent -> spo2_VPO
@@ -50,6 +49,7 @@ sex -> spo2_VPO
 sex -> type_obesity
 sleep_apnea -> COPD
 sleep_apnea -> CPAP_use
+sleep_apnea -> asthma
 sleep_apnea -> atelectasis_percent
 sleep_apnea -> oxygen_use
 sleep_apnea -> spo2_VPO

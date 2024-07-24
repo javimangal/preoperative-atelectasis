@@ -39,7 +39,6 @@ altitude_cat -> spo2_VPO
 asthma -> COPD
 asthma -> atelectasis_percent
 asthma -> spo2_VPO
-asthma <-> sleep_apnea
 atelectasis_percent -> spo2_VPO
 sex -> BMI
 sex -> COPD
@@ -48,10 +47,10 @@ sex -> atelectasis_percent
 sex -> sleep_apnea
 sex -> spo2_VPO
 sleep_apnea -> COPD
+sleep_apnea -> asthma
 sleep_apnea -> atelectasis_percent
 sleep_apnea -> spo2_VPO
 }
-
 
 
 Mediator-outcome confounders: 
@@ -85,7 +84,6 @@ altitude_cat -> spo2_VPO
 asthma -> COPD
 asthma -> atelectasis_percent
 asthma -> spo2_VPO
-asthma <-> sleep_apnea
 atelectasis_percent -> spo2_VPO
 sex -> BMI
 sex -> COPD
@@ -94,6 +92,7 @@ sex -> atelectasis_percent
 sex -> sleep_apnea
 sex -> spo2_VPO
 sleep_apnea -> COPD
+sleep_apnea -> asthma
 sleep_apnea -> atelectasis_percent
 sleep_apnea -> spo2_VPO
 }
@@ -131,7 +130,6 @@ altitude_cat -> spo2_VPO
 asthma -> COPD
 asthma -> atelectasis_percent
 asthma -> spo2_VPO
-asthma <-> sleep_apnea
 atelectasis_percent -> spo2_VPO
 sex -> COPD
 sex -> asthma
@@ -139,9 +137,11 @@ sex -> atelectasis_percent
 sex -> sleep_apnea
 sex -> spo2_VPO
 sleep_apnea -> COPD
+sleep_apnea -> asthma
 sleep_apnea -> atelectasis_percent
 sleep_apnea -> spo2_VPO
 }
+
 
 IPW removing mediator-outcome confounding:
 dag {
@@ -172,12 +172,12 @@ altitude_cat -> sleep_apnea
 altitude_cat -> spo2_VPO
 asthma -> COPD
 asthma -> spo2_VPO
-asthma <-> sleep_apnea
 atelectasis_percent -> spo2_VPO
 sex -> COPD
 sex -> asthma
 sex -> sleep_apnea
 sex -> spo2_VPO
 sleep_apnea -> COPD
+sleep_apnea -> asthma
 sleep_apnea -> spo2_VPO
 }
