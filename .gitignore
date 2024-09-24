@@ -1,5 +1,6 @@
 # Data
 /data/temp
+/data/raw 
 
 # History files
 .Rhistory

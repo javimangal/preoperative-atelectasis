@@ -5,13 +5,16 @@
   </a>
 </p>
 
+[![Static Badge](https://img.shields.io/badge/peer_reviewed_article-10.1213%2FANE.0000000000007166-yellow)](https://doi.org/10.1213/ane.0000000000007166)
 [![Repository DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10211242.svg)](https://doi.org/10.5281/zenodo.10211242) [![Dataverse](https://img.shields.io/badge/Dataverse%20DOI-10.7910/DVN/4JZZLB-red)](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB) [![Preprint DOI](https://img.shields.io/badge/preprint_DOI-10.1101%2F2024.01.11.24301138v2-%23000080?label=medRxiv&link=https%3A%2F%2Fwww.medrxiv.org%2Fcontent%2F10.1101%2F2024.01.11.24301138v2)](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2)
 
 # Description
 
-This repository contains the documentation for reproducibility of the study ***"Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study"***. The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). The current version of the manuscript is available in [medRxiv](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2). The [first version](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v1) of this manuscript is also available through medRxiv, and both the replication data (v1) and code (v1) for that manuscript are cited within the preprint. The current status of the repository is reflective of the manuscript that has been accepted for publication in the peer-reviewed journal [*Anesthesia & Analgesia*](https://journals.lww.com/anesthesia-analgesia/pages/default.aspx). 
+This repository contains the documentation for reproducibility of the study ***"Preoperative atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional study"***. The current status of the repository is reflective of the [original research paper](https://doi.org/10.1213/ane.0000000000007166) published in the peer-reviewed journal [*Anesthesia & Analgesia*](https://journals.lww.com/anesthesia-analgesia/pages/default.aspx). The linked dataset for this study can be found in the [Harvard Dataverse](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/4JZZLB). 
 
-This study was presented as a [poster](docs/manuscript/Poster-WEON-2024.pdf)in the Annual Netherlands Epidemiology Congress [WEON 2024](https://weon.nl/) and can be found in the [docs folder](docs/manuscript/). 
+The manuscript was priorly published as a preprint, available through [medRxiv](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2).  
+
+This study was presented as a [poster](docs/manuscript/Poster-WEON-2024.pdf) in the Annual Netherlands Epidemiology Congress [WEON 2024](https://weon.nl/). 
 
 ## Getting started
 
@@ -75,4 +78,4 @@ The full documentation with comments of statistical analyses can be found in the
 
 This project is licensed under the terms of the [MIT License](/LICENSE).
 
-This project structure template repository is adapted from the [Good Enough Project](https://github.com/bvreede/good-enough-project) Cookiecutter template by Barbara Vreede (2019).
+This project structure repository is adapted from the [Utrecht University simple R project template](https://github.com/UtrechtUniversity/simple-r-project), which builds upon the [Good Enough Project](https://github.com/bvreede/good-enough-project) Cookiecutter template by Barbara Vreede (2019).
