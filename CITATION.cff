@@ -1,22 +1,63 @@
 cff-version: 1.2.0
-message: "If you use this material, please cite it as below."
+message: "If you use this material, please cite the journal article (see preferred-citation). If you reused the analysis code or dataset specifically, please also cite the Zenodo and Dataverse records."
 title: "Preoperative Atelectasis in Bariatric Surgery"
 authors:
-  - family-names: Mancilla Galindo
+  - family-names: Mancilla-Galindo
     given-names: Javier
     orcid: https://orcid.org/0000-0002-0718-467X
 identifiers:
   - type: doi
     value: 10.5281/zenodo.10211241
-    description: The concept DOI for the collection of these materials.
+    description: Concept DOI for the collection of these materials (Zenodo).
+  - type: doi
+    value: 10.7910/DVN/4JZZLB
+    description: Dataset DOI (Harvard Dataverse).
 repository-code: "https://github.com/javimangal/preoperative-atelectasis"
+url: "https://doi.org/10.1213/ANE.0000000000007166"
 keywords:
   - Pulmonary Atelectasis
+  - Postoperative Pulmonary Complications
   - Bariatric Surgery
   - Obesity
   - Oxygen Saturation
+  - Perioperative Medicine
   - Anesthesiology
   - Epidemiology
-license: Apache-2.0
+license: MIT
 version: 2.0.0
 date-released: 2024-05-27
+preferred-citation:
+  type: article
+  title: "Preoperative Atelectasis in Patients with Obesity Undergoing Bariatric Surgery: A Cross-Sectional Study"
+  authors:
+    - family-names: Mancilla-Galindo
+      given-names: Javier
+      orcid: https://orcid.org/0000-0002-0718-467X
+    - family-names: Ortiz-Gomez
+      given-names: Jesus Elias
+    - family-names: Pérez-Nieto
+      given-names: Orlando Rubén
+    - family-names: De Jong
+      given-names: Audrey
+    - family-names: Escarramán-Martínez
+      given-names: Diego
+    - family-names: Kammar-García
+      given-names: Ashuin
+    - family-names: Ramírez-Mata
+      given-names: Luis Carlos
+    - family-names: Mendez-Díaz
+      given-names: Adriana
+    - family-names: Guerrero-Gutiérrez
+      given-names: Manuel Alberto
+  journal: "Anesthesia & Analgesia"
+  year: 2025
+  month: 6
+  volume: 140
+  issue: 6
+  start: 1450
+  end: 1460
+  doi: 10.1213/ANE.0000000000007166
+  issn: "0003-2999"
+  url: "https://doi.org/10.1213/ANE.0000000000007166"
+  publisher:
+    name: "Wolters Kluwer Health"
