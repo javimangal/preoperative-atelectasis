@@ -1,0 +1,131 @@
+# Preoperative Atelectasis in Bariatric Surgery
+
+> Reproducibility and citation hub for the peer-reviewed Open Access study
+> "Preoperative Atelectasis in Patients with Obesity Undergoing Bariatric Surgery:
+> A Cross-Sectional Study" by Mancilla-Galindo et al., published in
+> *Anesthesia & Analgesia* 2025;140(6):1450–1460.
+
+## How to cite
+
+Mancilla-Galindo J, Ortiz-Gomez JE, Pérez-Nieto OR, De Jong A, Escarramán-Martínez D,
+Kammar-García A, Ramírez-Mata LC, Mendez-Díaz A, Guerrero-Gutiérrez MA. Preoperative
+atelectasis in patients with obesity undergoing bariatric surgery: a cross-sectional
+study. *Anesthesia & Analgesia*. 2025;140(6):1450–1460.
+https://doi.org/10.1213/ANE.0000000000007166
+
+## Primary sources
+
+- [Published article (Anesthesia & Analgesia, Open Access)](https://doi.org/10.1213/ANE.0000000000007166)
+- [Preprint (medRxiv)](https://www.medrxiv.org/content/10.1101/2024.01.11.24301138v2)
+- [Dataset (Harvard Dataverse)](https://doi.org/10.7910/DVN/4JZZLB)
+- [Software archive (Zenodo)](https://doi.org/10.5281/zenodo.10211241)
+
+## Plain-language summary
+
+Atelectasis refers to small regions of the lung where the alveoli have collapsed
+and air can no longer move in and out. In patients with obesity, atelectasis is
+well known to develop during and after anaesthesia and is one of the main drivers
+of postoperative pulmonary complications. Most prior research has focused on
+atelectasis that appears **after** surgery; this study asked a different question:
+how often is atelectasis already present **before** the patient enters the operating
+room, and to what extent does it explain the lower preoperative blood oxygen
+saturation (SpO₂) commonly observed in obese patients?
+
+The investigators reviewed preoperative chest CT scans from 236 adults scheduled
+for elective bariatric surgery in a specialised centre in Tijuana, Mexico, during
+June 2020. The CTs had been obtained as part of routine COVID-19 screening, which
+created an unusual opportunity to image the lungs before surgery in a population
+where preoperative imaging is not typically part of standard care.
+
+## Headline findings
+
+- **Roughly 1 in 3 patients (32.6%) already had atelectasis before surgery.** This
+  is far higher than postoperative atelectasis rates typically reported in surgical
+  registries, which usually fall well under 6%.
+- **Prevalence rose sharply once BMI reached ≥45 kg/m².** Compared with the 30–35 kg/m²
+  group, prevalence was 3.5× higher in the 45–50 kg/m² range and 8× higher in the
+  ≥50 kg/m² range.
+- **Every patient with BMI ≥50 kg/m² had detectable atelectasis (100% prevalence).**
+- **Atelectasis percentage alone explained ~70% of the variability in preoperative
+  SpO₂.** Statistical mediation analysis showed that about 81% of the apparent
+  effect of BMI on a low preoperative SpO₂ was actually channelled through
+  atelectasis as the underlying mechanism.
+- **Atelectasis was usually right-lung-base predominant** (~69% of affected cases).
+
+## Why this matters for postoperative pulmonary complications
+
+This study is directly relevant to research and practice around postoperative
+pulmonary complications, and especially postoperative atelectasis, for four
+reasons that the authors highlight in their discussion:
+
+1. **Postoperative atelectasis is probably under-counted.** Large registries and
+   trials (e.g., BOLD, PROBESE) report postoperative atelectasis rates of roughly
+   0.4–5.6%, but these are based on cases where chest imaging was triggered by
+   clinical suspicion. Patients without imaging are assumed to be free of
+   atelectasis, which biases the estimates toward the null. The very high
+   prevalence seen here **before** surgery suggests the true postoperative burden
+   is likely higher than registry numbers imply.
+
+2. **Some "postoperative" atelectasis is actually pre-existing.** Without a
+   preoperative baseline, atelectasis detected after surgery can be wrongly
+   attributed in full to anaesthesia and surgical insult. Knowing that about a
+   third of patients with obesity arrive in the OR already having atelectasis
+   reframes how postoperative imaging should be interpreted, and how
+   "new" atelectasis should be distinguished from "background" atelectasis.
+
+3. **A standardised, quantitative definition is proposed.** The authors define
+   atelectasis as ≥2.5% of total lung volume on chest CT. Adopting this threshold
+   in future prospective trials would harmonise outcome reporting and make
+   pre- vs. postoperative comparisons meaningful — addressing a long-standing
+   inconsistency in the perioperative atelectasis literature.
+
+4. **Preoperative atelectasis is a candidate target for individualised
+   ventilation.** Because atelectasis percentage explains most of the variability
+   in preoperative SpO₂, it is plausibly a useful predictor of intraoperative
+   ventilation needs. The authors suggest that a clinical prediction model — even
+   one not requiring a CT — could help tailor PEEP and recruitment strategies,
+   which are already showing promise for preventing postoperative atelectasis.
+
+In short, this work argues that **the perioperative atelectasis problem may start
+before incision**, and that recognising this changes how postoperative pulmonary
+complications should be measured, attributed, and prevented.
+
+## Study at a glance
+
+- **Design:** Single-centre cross-sectional study
+- **Setting:** Specialised laparoscopic bariatric surgery centre in Tijuana,
+  Mexico (predominantly US/Canada medical-tourism population)
+- **Period:** June 2020
+- **Participants:** 236 adults with obesity scheduled for elective bariatric
+  surgery; 90.7% female; median BMI 40.3 kg/m² (range 30.0–77.3)
+- **Imaging:** Preoperative high-resolution chest CT, re-read by a senior
+  radiologist blinded to BMI
+- **Atelectasis definition:** ≥2.5% of total lung volume on chest CT
+- **Statistical methods:** Modified Poisson regression for prevalence ratios;
+  ordinal logistic regression for extent of coverage; DAG-informed causal
+  modelling with inverse probability weighting for mediation analysis;
+  E-values for sensitivity to unmeasured confounding
+- **Reporting:** STROBE guideline for cross-sectional studies
+
+## Limitations to be aware of
+
+- Single centre, predominantly female (~91%), in a medical-tourism population.
+- Cross-sectional design — causal interpretation is supported by DAG-informed
+  analysis and E-values, but residual confounding cannot be excluded.
+- Atelectasis coverage was rounded down to the nearest 2.5%, which likely
+  underestimates the true prevalence.
+- The study does not, by itself, establish the impact of preoperative
+  atelectasis on postoperative outcomes; longitudinal follow-up studies are
+  needed.
+
+## Reproducibility
+
+- [README.md](./README.md) — full reproduction instructions (R 4.3.3, renv lockfile)
+- [R/](./R/) — analysis scripts (Quarto), Parts 1–8
+- [docs/reports/](./docs/reports/) — rendered PDF analysis reports
+
+## Keywords
+
+preoperative atelectasis; postoperative atelectasis; postoperative pulmonary
+complications; obesity; bariatric surgery; oxygen saturation; SpO₂; mediation
+analysis; perioperative medicine; anesthesiology; epidemiology; STROBE
